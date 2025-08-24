@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../router/routes.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/navigation_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -92,7 +91,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          context.go(AppRoutes.expenses);
+          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: true);
+        } else if (state is AuthenticatedButNoPreferences) {
+          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: false);
         } else if (state is AuthError) {
           _showErrorDialog('Authentication Error', state.message);
         }
@@ -156,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
               // Continue with Email Button
               CupertinoButton(
                 onPressed: () {
-                  context.push(AppRoutes.emailAuth);
+                  NavigationService().navigateToEmailAuth(context);
                 },
                 padding: EdgeInsets.symmetric(
                   vertical: ResponsiveConstants.spacing16,
@@ -259,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: () {
-                      context.push(AppRoutes.emailAuth, extra: true);
+                      NavigationService().navigateToEmailAuth(context, isSignUp: true);
                     },
                     child: Text(
                       'Sign up',

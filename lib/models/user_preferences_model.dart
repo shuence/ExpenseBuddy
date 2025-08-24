@@ -68,14 +68,10 @@ class UserPreferencesModel extends Equatable {
       state: json['state'],
       timezone: json['timezone'],
       createdAt: json['createdAt'] != null
-          ? (json['createdAt'] is DateTime
-                ? json['createdAt']
-                : DateTime.parse(json['createdAt'].toDate().toIso8601String()))
+          ? _parseDateTime(json['createdAt'])
           : DateTime.now(),
       updatedAt: json['updatedAt'] != null
-          ? (json['updatedAt'] is DateTime
-                ? json['updatedAt']
-                : DateTime.parse(json['updatedAt'].toDate().toIso8601String()))
+          ? _parseDateTime(json['updatedAt'])
           : DateTime.now(),
     );
   }
@@ -149,6 +145,26 @@ class UserPreferencesModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  // Helper method to parse DateTime from various formats
+  static DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue is DateTime) {
+      return dateValue;
+    } else if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        // If parsing fails, return current time
+        return DateTime.now();
+      }
+    } else if (dateValue is int) {
+      // Handle timestamp in milliseconds
+      return DateTime.fromMillisecondsSinceEpoch(dateValue);
+    } else {
+      // Fallback to current time
+      return DateTime.now();
+    }
   }
 
   @override

@@ -34,14 +34,10 @@ class UserModel extends Equatable {
       provider: json['provider'] ?? 'email',
       fcmToken: json['fcmToken'],
       createdAt: json['createdAt'] != null 
-          ? (json['createdAt'] is DateTime 
-              ? json['createdAt'] 
-              : DateTime.parse(json['createdAt'].toDate().toIso8601String()))
+          ? _parseDateTime(json['createdAt'])
           : null,
       lastLoginAt: json['lastLoginAt'] != null 
-          ? (json['lastLoginAt'] is DateTime 
-              ? json['lastLoginAt'] 
-              : DateTime.parse(json['lastLoginAt'].toDate().toIso8601String()))
+          ? _parseDateTime(json['lastLoginAt'])
           : null,
       isEmailVerified: json['isEmailVerified'] ?? false,
       phoneNumber: json['phoneNumber'],
@@ -90,6 +86,26 @@ class UserModel extends Equatable {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       phoneNumber: phoneNumber ?? this.phoneNumber,
     );
+  }
+
+  // Helper method to parse DateTime from various formats
+  static DateTime? _parseDateTime(dynamic dateValue) {
+    if (dateValue is DateTime) {
+      return dateValue;
+    } else if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        // If parsing fails, return null
+        return null;
+      }
+    } else if (dateValue is int) {
+      // Handle timestamp in milliseconds
+      return DateTime.fromMillisecondsSinceEpoch(dateValue);
+    } else {
+      // Fallback to null
+      return null;
+    }
   }
 
   @override

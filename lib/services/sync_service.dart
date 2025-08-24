@@ -1,5 +1,6 @@
 import '../data/repositories/expense_repository.dart';
 import '../models/expense.dart';
+import 'package:flutter/foundation.dart';
 
 class SyncService {
   final ExpenseRepository _expenseRepository;
@@ -13,7 +14,7 @@ class SyncService {
       
       // Here you would implement the sync logic
       // For now, just a placeholder
-      print('Syncing ${localExpenses.length} expenses for user $userId');
+      debugPrint('Syncing ${localExpenses.length} expenses for user $userId');
     } catch (e) {
       throw Exception('Sync failed: $e');
     }

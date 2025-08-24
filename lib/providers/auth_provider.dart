@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../data/remote/auth_service.dart';
 import '../models/user_model.dart';
+import '../services/user_preferences_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -45,7 +46,11 @@ class ForgotPasswordRequested extends AuthEvent {
   List<Object?> get props => [email];
 }
 
+class ResetAuthState extends AuthEvent {}
+
 class AuthCheckRequested extends AuthEvent {}
+
+class CheckUserPreferences extends AuthEvent {}
 
 // States
 abstract class AuthState extends Equatable {
@@ -61,6 +66,15 @@ class Authenticated extends AuthState {
   final UserModel user;
   
   Authenticated(this.user);
+  
+  @override
+  List<Object?> get props => [user];
+}
+
+class AuthenticatedButNoPreferences extends AuthState {
+  final UserModel user;
+  
+  AuthenticatedButNoPreferences(this.user);
   
   @override
   List<Object?> get props => [user];
@@ -97,7 +111,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AppleSignInRequested>(_onAppleSignInRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<ResetAuthState>(_onResetAuthState);
     on<AuthCheckRequested>(_onAuthCheckRequested);
+    on<CheckUserPreferences>(_onCheckUserPreferences);
   }
   
   Future<void> _onSignInRequested(SignInRequested event, Emitter<AuthState> emit) async {
@@ -106,7 +122,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithEmailAndPassword(event.email, event.password);
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
-        emit(Authenticated(userModel));
+        // Check if user has preferences set
+        final preferencesService = UserPreferencesService();
+        final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
+        
+        if (preferencesExist) {
+          emit(Authenticated(userModel));
+        } else {
+          emit(AuthenticatedButNoPreferences(userModel));
+        }
       } else {
         emit(AuthError('Failed to get user data'));
       }
@@ -121,7 +145,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.createUserWithEmailAndPassword(event.email, event.password, event.name);
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
-        emit(Authenticated(userModel));
+        // Check if user preferences exist
+        final preferencesService = UserPreferencesService();
+        final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
+        
+        if (preferencesExist) {
+          emit(Authenticated(userModel));
+        } else {
+          emit(AuthenticatedButNoPreferences(userModel));
+        }
       } else {
         emit(AuthError('Failed to get user data'));
       }
@@ -179,6 +211,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthError(e.toString()));
     }
   }
+
+  void _onResetAuthState(ResetAuthState event, Emitter<AuthState> emit) {
+    emit(AuthInitial());
+  }
+  
+  Future<void> _onCheckUserPreferences(CheckUserPreferences event, Emitter<AuthState> emit) async {
+    try {
+      final user = _authService.currentUser;
+      if (user != null) {
+        final userModel = await _authService.getUserModel();
+        if (userModel != null) {
+          // Check if user has preferences set
+          // For now, we'll assume new users need to set preferences
+          emit(AuthenticatedButNoPreferences(userModel));
+        } else {
+          emit(UnAuthenticated());
+        }
+      } else {
+        emit(UnAuthenticated());
+      }
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
   
   Future<void> _onAuthCheckRequested(AuthCheckRequested event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
@@ -187,7 +243,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user != null) {
         final userModel = await _authService.getUserModel();
         if (userModel != null) {
-          emit(Authenticated(userModel));
+          // Check if user preferences exist
+          final preferencesService = UserPreferencesService();
+          final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
+          
+          if (preferencesExist) {
+            emit(Authenticated(userModel));
+          } else {
+            emit(AuthenticatedButNoPreferences(userModel));
+          }
         } else {
           emit(UnAuthenticated());
         }

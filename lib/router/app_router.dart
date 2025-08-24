@@ -1,3 +1,6 @@
+
+import 'package:expensebuddy/ui/screens/error/no_route_found_screen.dart';
+import 'package:expensebuddy/ui/screens/onboarding/user_preferences_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../ui/screens/splash_screen.dart';
 import '../ui/screens/onboarding/onboarding_screen.dart';
@@ -6,7 +9,6 @@ import '../ui/screens/auth/email_auth_screen.dart';
 import '../ui/screens/auth/forgot_password_screen.dart';
 import '../ui/screens/expenses/expense_list_screen.dart';
 import '../ui/screens/summary/summary_screen.dart';
-import '../ui/screens/error/no_route_found_screen.dart';
 import 'routes.dart';
 
 class AppRouter {
@@ -22,20 +24,24 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
+        path: AppRoutes.userPreferences,
+        builder: (context, state) => const UserPreferencesScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
       ),
-                    GoRoute(
-                path: AppRoutes.emailAuth,
-                builder: (context, state) {
-                  final isSignUp = state.extra as bool? ?? false;
-                  return EmailAuthScreen(initialSignUpMode: isSignUp);
-                },
-              ),
-              GoRoute(
-                path: AppRoutes.forgotPassword,
-                builder: (context, state) => const ForgotPasswordScreen(),
-              ),
+      GoRoute(
+        path: AppRoutes.emailAuth,
+        builder: (context, state) {
+          final isSignUp = state.extra as bool? ?? false;
+          return EmailAuthScreen(initialSignUpMode: isSignUp);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
       GoRoute(
         path: AppRoutes.expenses,
         builder: (context, state) => const ExpenseListScreen(),

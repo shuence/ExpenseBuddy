@@ -82,7 +82,7 @@ class PermissionService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting location: $e');
+        debugPrint('Error getting location: $e');
       }
       return {
         'granted': false,
@@ -102,7 +102,7 @@ class PermissionService {
       return status.isGranted;
     } catch (e) {
       if (kDebugMode) {
-        print('Error requesting camera permission: $e');
+        debugPrint('Error requesting camera permission: $e');
       }
       return false;
     }
@@ -115,7 +115,7 @@ class PermissionService {
       return status.isGranted;
     } catch (e) {
       if (kDebugMode) {
-        print('Error requesting storage permission: $e');
+        debugPrint('Error requesting storage permission: $e');
       }
       return false;
     }
@@ -128,7 +128,7 @@ class PermissionService {
       return status.isGranted;
     } catch (e) {
       if (kDebugMode) {
-        print('Error requesting SMS permission: $e');
+        debugPrint('Error requesting SMS permission: $e');
       }
       return false;
     }
@@ -141,7 +141,7 @@ class PermissionService {
       return status.isGranted;
     } catch (e) {
       if (kDebugMode) {
-        print('Error requesting notification permission: $e');
+        debugPrint('Error requesting notification permission: $e');
       }
       return false;
     }
@@ -156,7 +156,7 @@ class PermissionService {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking biometric availability: $e');
+        debugPrint('Error checking biometric availability: $e');
       }
       return false;
     }
@@ -191,7 +191,7 @@ class PermissionService {
       status['biometric'] = true; // Placeholder
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking permission status: $e');
+        debugPrint('Error checking permission status: $e');
       }
       // Set all to false if there's an error
       status = {
@@ -213,7 +213,7 @@ class PermissionService {
       await openAppSettings();
     } catch (e) {
       if (kDebugMode) {
-        print('Error opening app settings: $e');
+        debugPrint('Error opening app settings: $e');
       }
     }
   }

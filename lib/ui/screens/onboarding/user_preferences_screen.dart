@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../router/routes.dart';
 import '../../../models/user_preferences_model.dart';
 import '../../../services/user_preferences_service.dart';
 import '../../../services/firebase_service.dart';
 import '../../../services/permission_service.dart';
+import '../../../services/navigation_service.dart';
 
 class UserPreferencesScreen extends StatefulWidget {
   const UserPreferencesScreen({super.key});
@@ -259,7 +258,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
 
       if (mounted) {
         // Navigate to home screen
-        context.go(AppRoutes.expenses);
+        NavigationService().handlePreferencesComplete(context);
       }
     } catch (e) {
       if (mounted) {
@@ -552,22 +551,25 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         SizedBox(height: ResponsiveConstants.spacing24),
         
         // Request All Permissions Button
-        CupertinoButton.filled(
-          onPressed: _isLoading ? null : _requestAllPermissions,
-          padding: EdgeInsets.symmetric(
-            vertical: ResponsiveConstants.spacing16,
-          ),
-          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
-          child: _isLoading
-              ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-              : Text(
-                  'Request All Permissions',
-                  style: TextStyle(
-                    fontSize: ResponsiveConstants.fontSize16,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.white,
+        SizedBox(
+          width: double.infinity,
+          child: CupertinoButton.filled(
+            onPressed: _isLoading ? null : _requestAllPermissions,
+            padding: EdgeInsets.symmetric(
+              vertical: ResponsiveConstants.spacing16,
+            ),
+            borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+            child: _isLoading
+                ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                : Text(
+                    'Request All Permissions',
+                    style: TextStyle(
+                      fontSize: ResponsiveConstants.fontSize16,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoColors.white,
+                    ),
                   ),
-                ),
+          ),
         ),
       ],
     );

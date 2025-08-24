@@ -4,6 +4,7 @@ class AppRoutes {
 
   // Onboarding
   static const String onboarding = '/onboarding';
+  static const String userPreferences = '/user-preferences';
 
   // Authentication
   static const String login = '/login';

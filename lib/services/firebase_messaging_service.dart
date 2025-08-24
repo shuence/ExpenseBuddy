@@ -71,17 +71,17 @@ class FirebaseMessagingService {
         _isInitialized = true;
         
         if (kDebugMode) {
-          print('Firebase Messaging Service initialized successfully');
-          print('FCM Token: $_fcmToken');
+          debugPrint('Firebase Messaging Service initialized successfully');
+          debugPrint('FCM Token: $_fcmToken');
         }
       } else {
         if (kDebugMode) {
-          print('Notification permission denied: ${settings.authorizationStatus}');
+          debugPrint('Notification permission denied: ${settings.authorizationStatus}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error initializing Firebase Messaging: $e');
+        debugPrint('Error initializing Firebase Messaging: $e');
       }
     }
   }
@@ -112,10 +112,10 @@ class FirebaseMessagingService {
   // Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
     if (kDebugMode) {
-      print('Foreground message received: ${message.messageId}');
-      print('Title: ${message.notification?.title}');
-      print('Body: ${message.notification?.body}');
-      print('Data: ${message.data}');
+      debugPrint('Foreground message received: ${message.messageId}');
+      debugPrint('Title: ${message.notification?.title}');
+      debugPrint('Body: ${message.notification?.body}');
+      debugPrint('Data: ${message.data}');
     }
 
     // Show local notification
@@ -125,8 +125,8 @@ class FirebaseMessagingService {
   // Handle notification taps
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
-      print('Notification tapped: ${message.messageId}');
-      print('Data: ${message.data}');
+      debugPrint('Notification tapped: ${message.messageId}');
+      debugPrint('Data: ${message.data}');
     }
 
     // Handle navigation based on message data
@@ -136,7 +136,7 @@ class FirebaseMessagingService {
   // Handle local notification taps
   void _onNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
-      print('Local notification tapped: ${response.payload}');
+      debugPrint('Local notification tapped: ${response.payload}');
     }
 
     // Handle navigation based on payload
@@ -219,7 +219,7 @@ class FirebaseMessagingService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating FCM token in Firestore: $e');
+        debugPrint('Error updating FCM token in Firestore: $e');
       }
     }
   }
@@ -229,11 +229,11 @@ class FirebaseMessagingService {
     try {
       await _messaging.subscribeToTopic(topic);
       if (kDebugMode) {
-        print('Subscribed to topic: $topic');
+        debugPrint('Subscribed to topic: $topic');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error subscribing to topic $topic: $e');
+        debugPrint('Error subscribing to topic $topic: $e');
       }
     }
   }
@@ -243,11 +243,11 @@ class FirebaseMessagingService {
     try {
       await _messaging.unsubscribeFromTopic(topic);
       if (kDebugMode) {
-        print('Unsubscribed from topic: $topic');
+        debugPrint('Unsubscribed from topic: $topic');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error unsubscribing from topic $topic: $e');
+        debugPrint('Error unsubscribing from topic $topic: $e');
       }
     }
   }
@@ -263,14 +263,14 @@ class FirebaseMessagingService {
       // This would typically be done through a Cloud Function
       // For now, we'll just log it
       if (kDebugMode) {
-        print('Sending notification to user $userId:');
-        print('Title: $title');
-        print('Body: $body');
-        print('Data: $data');
+        debugPrint('Sending notification to user $userId:');
+        debugPrint('Title: $title');
+        debugPrint('Body: $body');
+        debugPrint('Data: $data');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error sending notification: $e');
+        debugPrint('Error sending notification: $e');
       }
     }
   }
@@ -282,7 +282,7 @@ class FirebaseMessagingService {
       return _fcmToken;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting FCM token: $e');
+        debugPrint('Error getting FCM token: $e');
       }
       return null;
     }
@@ -294,11 +294,11 @@ class FirebaseMessagingService {
       await _messaging.deleteToken();
       _fcmToken = null;
       if (kDebugMode) {
-        print('FCM token deleted');
+        debugPrint('FCM token deleted');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error deleting FCM token: $e');
+        debugPrint('Error deleting FCM token: $e');
       }
     }
   }
@@ -309,11 +309,11 @@ class FirebaseMessagingService {
       // Note: setMessagesDisplaySuppressed is deprecated in newer versions
       // await _inAppMessaging.setMessagesDisplaySuppressed(!enabled);
       if (kDebugMode) {
-        print('In-app messaging ${enabled ? 'enabled' : 'disabled'}');
+        debugPrint('In-app messaging ${enabled ? 'enabled' : 'disabled'}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error setting in-app messaging: $e');
+        debugPrint('Error setting in-app messaging: $e');
       }
     }
   }
@@ -323,11 +323,11 @@ class FirebaseMessagingService {
     try {
       await _inAppMessaging.triggerEvent(eventName);
       if (kDebugMode) {
-        print('In-app message triggered: $eventName');
+        debugPrint('In-app message triggered: $eventName');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error triggering in-app message: $e');
+        debugPrint('Error triggering in-app message: $e');
       }
     }
   }
@@ -337,9 +337,9 @@ class FirebaseMessagingService {
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (kDebugMode) {
-    print('Background message received: ${message.messageId}');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
+    debugPrint('Background message received: ${message.messageId}');
+    debugPrint('Title: ${message.notification?.title}');
+    debugPrint('Body: ${message.notification?.body}');
+    debugPrint('Data: ${message.data}');
   }
 }

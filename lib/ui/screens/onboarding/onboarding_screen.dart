@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../providers/onboarding_provider.dart';
-import '../../../router/routes.dart';
+import '../../../services/navigation_service.dart';
 import 'widgets/onboarding_page_widget.dart';
 import 'widgets/onboarding_indicator.dart';
 
@@ -82,12 +81,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _completeOnboarding() {
     context.read<OnboardingBloc>().add(const CompleteOnboarding());
-    context.go(AppRoutes.login);
+    NavigationService().markOnboardingCompleted();
+    NavigationService().navigateBasedOnUserState(context);
   }
 
   void _skipOnboarding() {
     context.read<OnboardingBloc>().add(const CompleteOnboarding());
-    context.go(AppRoutes.login);
+    NavigationService().markOnboardingCompleted();
+    NavigationService().navigateBasedOnUserState(context);
   }
 
   @override
@@ -95,8 +96,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return BlocListener<OnboardingBloc, OnboardingState>(
       listener: (context, state) {
         if (state is OnboardingLoaded && state.hasSeenOnboarding) {
-          // User has already seen onboarding, navigate to login
-          context.go(AppRoutes.login);
+          // User has already seen onboarding, navigate based on user state
+          NavigationService().navigateBasedOnUserState(context);  
         }
       },
       child: BlocBuilder<OnboardingBloc, OnboardingState>(

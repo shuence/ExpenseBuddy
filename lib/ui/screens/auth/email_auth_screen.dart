@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../router/routes.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/navigation_service.dart';
 
 class EmailAuthScreen extends StatefulWidget {
   final bool initialSignUpMode;
@@ -206,7 +205,9 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          context.go(AppRoutes.expenses);
+          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: true);
+        } else if (state is AuthenticatedButNoPreferences) {
+          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: false);
         } else if (state is AuthError) {
           _showErrorDialog('Authentication Error', state.message);
         }
@@ -223,7 +224,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
           ),
           backgroundColor: CupertinoColors.white,
           leading: CupertinoNavigationBarBackButton(
-            onPressed: () => context.pop(),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ),
         child: SafeArea(
@@ -318,7 +319,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                     alignment: Alignment.centerRight,
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () => context.go(AppRoutes.forgotPassword),
+                      onPressed: () => NavigationService().navigateToForgotPassword(context),
                       child: Text(
                         'Forgot Password?',
                         style: TextStyle(

@@ -50,6 +50,15 @@ class MarkSetupComplete extends UserPreferencesEvent {
   List<Object?> get props => [userId];
 }
 
+class CheckPreferencesExist extends UserPreferencesEvent {
+  final String userId;
+
+  const CheckPreferencesExist(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
 // States
 abstract class UserPreferencesState extends Equatable {
   const UserPreferencesState();
@@ -89,6 +98,15 @@ class UserPreferencesUpdated extends UserPreferencesState {
   List<Object?> get props => [preferences];
 }
 
+class UserPreferencesNotFound extends UserPreferencesState {
+  final String userId;
+
+  const UserPreferencesNotFound(this.userId);
+
+  @override
+  List<Object?> get props => [userId];
+}
+
 // Bloc
 class UserPreferencesBloc extends Bloc<UserPreferencesEvent, UserPreferencesState> {
   final UserPreferencesService _preferencesService;
@@ -98,6 +116,7 @@ class UserPreferencesBloc extends Bloc<UserPreferencesEvent, UserPreferencesStat
     on<UpdateNotificationSettings>(_onUpdateNotificationSettings);
     on<UpdatePermissionStatus>(_onUpdatePermissionStatus);
     on<MarkSetupComplete>(_onMarkSetupComplete);
+    on<CheckPreferencesExist>(_onCheckPreferencesExist);
   }
 
   Future<void> _onLoadUserPreferences(
@@ -208,6 +227,30 @@ class UserPreferencesBloc extends Bloc<UserPreferencesEvent, UserPreferencesStat
         );
         
         emit(UserPreferencesUpdated(updatedPreferences));
+      }
+    } catch (e) {
+      emit(UserPreferencesError(e.toString()));
+    }
+  }
+
+  Future<void> _onCheckPreferencesExist(
+    CheckPreferencesExist event,
+    Emitter<UserPreferencesState> emit,
+  ) async {
+    try {
+      emit(UserPreferencesLoading());
+      
+      final exists = await _preferencesService.preferencesExist(event.userId);
+      
+      if (exists) {
+        final preferences = await _preferencesService.getUserPreferences(event.userId);
+        if (preferences != null) {
+          emit(UserPreferencesLoaded(preferences));
+        } else {
+          emit(UserPreferencesNotFound(event.userId));
+        }
+      } else {
+        emit(UserPreferencesNotFound(event.userId));
       }
     } catch (e) {
       emit(UserPreferencesError(e.toString()));

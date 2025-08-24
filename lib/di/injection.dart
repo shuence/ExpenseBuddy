@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,18 +49,18 @@ Future<void> configureDependencies() async {
     () => ExpenseRepository(getIt<ExpenseDao>(), getIt<FirestoreService>()),
   );
   
-  // BLoCs
-  getIt.registerFactory<AuthBloc>(() => AuthBloc(getIt<AuthService>()));
-  getIt.registerFactory<ExpenseBloc>(() => ExpenseBloc(getIt<ExpenseRepository>()));
-  getIt.registerFactory<CurrencyBloc>(() => CurrencyBloc(getIt<CurrencyService>()));
-  getIt.registerFactory<ThemeBloc>(() => ThemeBloc(getIt<SharedPreferences>()));
-  getIt.registerFactory<OnboardingBloc>(() => OnboardingBloc(getIt<SharedPreferences>()));
-  getIt.registerFactory<UserPreferencesBloc>(() => UserPreferencesBloc(getIt<UserPreferencesService>()));
+  // BLoCs - Register as singletons to ensure they're always available
+  getIt.registerSingleton<AuthBloc>(AuthBloc(getIt<AuthService>()));
+  getIt.registerSingleton<ExpenseBloc>(ExpenseBloc(getIt<ExpenseRepository>()));
+  getIt.registerSingleton<CurrencyBloc>(CurrencyBloc(getIt<CurrencyService>()));
+  getIt.registerSingleton<ThemeBloc>(ThemeBloc(getIt<SharedPreferences>()));
+  getIt.registerSingleton<OnboardingBloc>(OnboardingBloc(getIt<SharedPreferences>()));
+  getIt.registerSingleton<UserPreferencesBloc>(UserPreferencesBloc(getIt<UserPreferencesService>()));
   
   // Initialize notification service
   await NotificationService.initialize();
   } catch (e) {
-    print('Error configuring dependencies: $e');
+    debugPrint('Error configuring dependencies: $e');
     // Continue with basic setup even if some services fail
   }
 }

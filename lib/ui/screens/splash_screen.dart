@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../router/routes.dart';
+import '../../../services/navigation_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,10 +41,16 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Navigate to onboarding screen after animation completes
+    // Navigate based on user state after animation completes
     Future.delayed(const Duration(milliseconds: 3000), () {
       if (mounted) {
-        context.go(AppRoutes.onboarding);
+        try {
+          NavigationService().checkAuthenticationAndNavigate(context);
+        } catch (e) {
+          debugPrint('Navigation failed, using emergency navigation: $e');
+          // Use emergency navigation if normal navigation fails
+          NavigationService().emergencyNavigate(context);
+        }
       }
     });
   }

@@ -71,7 +71,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: const Text('OK'),
             onPressed: () {
               Navigator.of(context).pop(); // Close dialog
-              context.go(AppRoutes.login); // Navigate to login
+              context.pop(); // Navigate back to previous screen
             },
           ),
         ],
@@ -160,33 +160,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _showErrorDialog('Password Reset Failed', state.message);
         }
       },
-      child: CupertinoPageScaffold(
-        backgroundColor: CupertinoColors.white,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(ResponsiveConstants.spacing24),
+      child: PopScope(
+        canPop: true,
+        onPopInvoked: (didPop) {
+          if (!didPop) {
+            context.pop();
+          } 
+        },
+        child: CupertinoPageScaffold(
+          backgroundColor: CupertinoColors.white,
+          navigationBar: CupertinoNavigationBar(
+            middle: const Text(
+              'Forgot Password',
+              style: TextStyle(
+                color: CupertinoColors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: CupertinoColors.white,
+            leading: CupertinoNavigationBarBackButton(
+              onPressed: () => context.pop(),
+            ),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(ResponsiveConstants.spacing24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Back button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => context.pop(),
-                    child: Icon(
-                      CupertinoIcons.arrow_left,
-                      color: AppTheme.getTextPrimaryColor(
-                        CupertinoTheme.brightnessOf(context),
-                      ),
-                      size: ResponsiveConstants.iconSize24,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: ResponsiveConstants.spacing32),
-
-                // Security Graphic
                 Center(
                   child: Container(
                     width: 120,
@@ -326,13 +327,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: ResponsiveConstants.spacing40),
 
-                // Back to Login Link
+                // Back to Email Auth Link
                 Center(
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => context.go(AppRoutes.login),
+                    onPressed: () => context.go(AppRoutes.emailAuth),
                     child: Text(
-                      'Back to Login',
+                      'Back to Sign In',
                       style: TextStyle(
                         color: AppTheme.getPrimaryColor(
                           CupertinoTheme.brightnessOf(context),
@@ -361,6 +362,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }
