@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "804709425801",
+    "project_id": "expensebuddy-app",
+    "storage_bucket": "expensebuddy-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804709425801:android:dae1b1f966d780657a1c58",
+        "android_client_info": {
+          "package_name": "com.expensebuddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "804709425801-41l18kuscmhl5rqppkcgj6b9q2al4dcp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDHRBMAVXZGcy7znBpoMbF8ya5d65ok3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "804709425801-41l18kuscmhl5rqppkcgj6b9q2al4dcp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,7 @@
+# Placeholder file for fonts directory
+# Add your custom font files here
+# Supported formats: TTF, OTF
+# Example font files:
+# - MyFont-Regular.ttf
+# - MyFont-Bold.ttf
+# - MyFont-Italic.ttf

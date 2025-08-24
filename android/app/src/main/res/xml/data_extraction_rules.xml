@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude sensitive data from cloud backup -->
+        <exclude domain="database" path="expenses.db"/>
+        <exclude domain="database" path="expenses.db-shm"/>
+        <exclude domain="database" path="expenses.db-wal"/>
+        <exclude domain="sharedpref" path="auth_tokens.xml"/>
+        <exclude domain="sharedpref" path="user_credentials.xml"/>
+        <exclude domain="file" path="private/"/>
+        <exclude domain="file" path="temp/"/>
+        <exclude domain="file" path="cache/"/>
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- Allow device transfer for user data -->
+        <include domain="database" path="expenses.db"/>
+        <include domain="sharedpref" path="user_preferences.xml"/>
+        <include domain="sharedpref" path="theme_settings.xml"/>
+        <include domain="file" path="documents/"/>
+        <include domain="file" path="pictures/"/>
+    </device-transfer>
+</data-extraction-rules>
