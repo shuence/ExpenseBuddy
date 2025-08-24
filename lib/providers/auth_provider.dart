@@ -36,6 +36,15 @@ class AppleSignInRequested extends AuthEvent {}
 
 class SignOutRequested extends AuthEvent {}
 
+class ForgotPasswordRequested extends AuthEvent {
+  final String email;
+  
+  ForgotPasswordRequested(this.email);
+  
+  @override
+  List<Object?> get props => [email];
+}
+
 class AuthCheckRequested extends AuthEvent {}
 
 // States
@@ -68,6 +77,15 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
+class ForgotPasswordSent extends AuthState {
+  final String email;
+  
+  ForgotPasswordSent(this.email);
+  
+  @override
+  List<Object?> get props => [email];
+}
+
 // Bloc
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthService _authService;
@@ -78,6 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<AppleSignInRequested>(_onAppleSignInRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
     on<AuthCheckRequested>(_onAuthCheckRequested);
   }
   
@@ -146,6 +165,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _authService.signOut();
       emit(UnAuthenticated());
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onForgotPasswordRequested(ForgotPasswordRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    try {
+      await _authService.sendPasswordResetEmail(event.email);
+      emit(ForgotPasswordSent(event.email));
     } catch (e) {
       emit(AuthError(e.toString()));
     }

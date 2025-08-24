@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firebase_service.dart';
 import '../../services/firebase_messaging_service.dart';
+import '../../services/user_preferences_service.dart';
 import '../../models/user_model.dart';
+import '../../models/user_preferences_model.dart';
 
 class AuthService {
   final FirebaseService _firebaseService = FirebaseService();
@@ -119,5 +121,28 @@ class AuthService {
     if (userDoc == null) return null;
     
     return UserModel.fromJson(userDoc);
+  }
+
+  // Check if user preferences exist
+  Future<bool> userPreferencesExist() async {
+    final user = currentUser;
+    if (user == null) return false;
+    
+    final preferencesService = UserPreferencesService();
+    return await preferencesService.preferencesExist(user.uid);
+  }
+
+  // Get user preferences
+  Future<UserPreferencesModel?> getUserPreferences() async {
+    final user = currentUser;
+    if (user == null) return null;
+    
+    final preferencesService = UserPreferencesService();
+    return await preferencesService.getUserPreferences(user.uid);
+  }
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _firebaseService.sendPasswordResetEmail(email);
   }
 }

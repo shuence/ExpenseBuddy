@@ -89,7 +89,7 @@ class FirebaseMessagingService {
   // Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
@@ -187,7 +187,6 @@ class FirebaseMessagingService {
     
     if (data.containsKey('route')) {
       final route = data['route'];
-      final extra = data['extra'];
       
       // Navigate based on route
       switch (route) {

@@ -243,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
 
-              SizedBox(height: ResponsiveConstants.spacing32),
+              SizedBox(height: ResponsiveConstants.spacing16),
 
               // Sign Up Link
               Row(

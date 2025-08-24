@@ -37,7 +37,7 @@ class FirestoreService {
   
   // Add user
   Future<void> addUser(UserModel user) async {
-    await usersCollection.doc(user.id).set(user.toJson());
+    await usersCollection.doc(user.uid).set(user.toJson());
   }
   
   // Get user

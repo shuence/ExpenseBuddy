@@ -10,6 +10,7 @@ import 'router/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'providers/expense_provider.dart';
 import 'providers/onboarding_provider.dart';
+import 'providers/auth_provider.dart';
 import 'di/injection.dart';
 
 class ExpenseBuddyApp extends StatelessWidget {
@@ -18,7 +19,11 @@ class ExpenseBuddyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Initialize responsive helper
-    ResponsiveHelper.init(context);
+    try {
+      ResponsiveHelper.init(context);
+    } catch (e) {
+      print('Error initializing ResponsiveHelper: $e');
+    }
     
     return DevicePreview(
       enabled: kDebugMode, // Only enable device preview in debug mode
@@ -26,6 +31,9 @@ class ExpenseBuddyApp extends StatelessWidget {
         providers: [
           BlocProvider<ThemeBloc>(
             create: (context) => getIt<ThemeBloc>()..add(const LoadTheme()),
+          ),
+          BlocProvider<AuthBloc>(
+            create: (context) => getIt<AuthBloc>(),
           ),
           BlocProvider<ExpenseBloc>(
             create: (context) => getIt<ExpenseBloc>(),

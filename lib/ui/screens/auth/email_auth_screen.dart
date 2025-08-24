@@ -318,9 +318,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                     alignment: Alignment.centerRight,
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () {
-                        // TODO: Implement forgot password
-                      },
+                      onPressed: () => context.go(AppRoutes.forgotPassword),
                       child: Text(
                         'Forgot Password?',
                         style: TextStyle(
@@ -335,22 +333,31 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                 SizedBox(height: ResponsiveConstants.spacing32),
                 
                 // Action Button
-                CupertinoButton.filled(
-                  onPressed: _isLoading ? null : _authenticate,
-                  padding: EdgeInsets.symmetric(
-                    vertical: ResponsiveConstants.spacing16,
+                Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
                   ),
-                  borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
-                  child: _isLoading
-                      ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                      : Text(
-                          _isSignUp ? 'Create Account' : 'Sign In',
-                          style: TextStyle(
-                            fontSize: ResponsiveConstants.fontSize18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
+                  child: CupertinoButton(
+                    onPressed: _isLoading ? null : _authenticate,
+                    padding: EdgeInsets.symmetric(
+                      vertical: ResponsiveConstants.spacing16,
+                    ),
+                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+                    color: CupertinoColors.transparent,
+                    child: _isLoading
+                        ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                        : Text(
+                            _isSignUp ? 'Create Account' : 'Sign In',
+                            style: TextStyle(
+                              fontSize: ResponsiveConstants.fontSize18,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
                 
                 SizedBox(height: ResponsiveConstants.spacing16),
