@@ -11,6 +11,7 @@ class BudgetModel {
   final String? userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final bool isSynced;
 
   BudgetModel({
     required this.id,
@@ -25,6 +26,7 @@ class BudgetModel {
     this.userId,
     this.createdAt,
     this.updatedAt,
+    this.isSynced = false,
   });
 
   double get remainingAmount => allocatedAmount - spentAmount;
@@ -58,6 +60,7 @@ class BudgetModel {
       userId: json['userId'],
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      isSynced: json['isSynced'] == 1 || json['isSynced'] == true,
     );
   }
 
@@ -87,6 +90,7 @@ class BudgetModel {
       'userId': userId,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+      'isSynced': isSynced ? 1 : 0,
     };
   }
 }

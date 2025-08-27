@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../providers/auth_provider.dart';
+import '../../../../providers/budget_provider.dart';
 import '../../../../router/routes.dart';
 import '../../../../services/user_preferences_service.dart';
 
@@ -89,6 +91,18 @@ class SignOutButton extends StatelessWidget {
                   debugPrint('🧹 Cleared all SharedPreferences data');
                 } catch (e) {
                   debugPrint('❌ Failed to clear SharedPreferences: $e');
+                }
+                
+                // Clear local budget data before signing out
+                try {
+                  final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+                  final currentUser = context.read<AuthBloc>().currentUser;
+                  if (currentUser != null) {
+                    await budgetProvider.clearLocalBudgetData(currentUser.uid);
+                    debugPrint('🧹 Cleared local budget data');
+                  }
+                } catch (e) {
+                  debugPrint('❌ Failed to clear local budget data: $e');
                 }
                 
                 context.read<AuthBloc>().add(SignOutRequested());

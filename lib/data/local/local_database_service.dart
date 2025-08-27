@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../models/transaction_model.dart';
+import '../../models/budget_model.dart';
 
 class LocalDatabaseService {
   static final LocalDatabaseService _instance = LocalDatabaseService._internal();
@@ -11,6 +12,7 @@ class LocalDatabaseService {
 
   static Database? _database;
   static const String _transactionsTable = 'transactions';
+  static const String _budgetsTable = 'budgets';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -24,7 +26,7 @@ class LocalDatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -53,11 +55,61 @@ class LocalDatabaseService {
     await db.execute('CREATE INDEX idx_transactions_date ON $_transactionsTable(date)');
     await db.execute('CREATE INDEX idx_transactions_category ON $_transactionsTable(category)');
     await db.execute('CREATE INDEX idx_transactions_type ON $_transactionsTable(type)');
+
+    // Create budgets table
+    await db.execute('''
+      CREATE TABLE $_budgetsTable (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        allocatedAmount REAL NOT NULL,
+        spentAmount REAL NOT NULL,
+        periodType TEXT NOT NULL,
+        startDate INTEGER NOT NULL,
+        endDate INTEGER NOT NULL,
+        color TEXT NOT NULL,
+        userId TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        isSynced INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    // Create indexes for budgets
+    await db.execute('CREATE INDEX idx_budgets_userId ON $_budgetsTable(userId)');
+    await db.execute('CREATE INDEX idx_budgets_periodType ON $_budgetsTable(periodType)');
+    await db.execute('CREATE INDEX idx_budgets_isSynced ON $_budgetsTable(isSynced)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 1) {
       // Future upgrade logic here
+    }
+    
+    if (oldVersion < 2) {
+      // Add budgets table for version 2
+      await db.execute('''
+        CREATE TABLE $_budgetsTable (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          icon TEXT NOT NULL,
+          allocatedAmount REAL NOT NULL,
+          spentAmount REAL NOT NULL,
+          periodType TEXT NOT NULL,
+          startDate INTEGER NOT NULL,
+          endDate INTEGER NOT NULL,
+          color TEXT NOT NULL,
+          userId TEXT NOT NULL,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL,
+          isSynced INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      
+      // Create indexes for budgets
+      await db.execute('CREATE INDEX idx_budgets_userId ON $_budgetsTable(userId)');
+      await db.execute('CREATE INDEX idx_budgets_periodType ON $_budgetsTable(periodType)');
+      await db.execute('CREATE INDEX idx_budgets_isSynced ON $_budgetsTable(isSynced)');
     }
   }
 
@@ -206,5 +258,163 @@ class LocalDatabaseService {
   Future<void> close() async {
     final db = await database;
     await db.close();
+  }
+
+  // ===== BUDGET METHODS =====
+
+  // Insert budget
+  Future<void> insertBudget(BudgetModel budget) async {
+    final db = await database;
+    final map = budget.toJson();
+    map['isSynced'] = 0; // Mark as not synced
+    
+    log('💾 [DB] Inserting budget: ${budget.name}');
+    log('💾 [DB] User ID: ${map['userId']}');
+    
+    await db.insert(
+      _budgetsTable,
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    log('✅ [DB] Budget inserted successfully');
+  }
+
+  // Update budget
+  Future<void> updateBudget(BudgetModel budget) async {
+    final db = await database;
+    final map = budget.toJson();
+    map['isSynced'] = 0; // Mark as not synced
+    
+    log('💾 [DB] Updating budget: ${budget.name}');
+    
+    await db.update(
+      _budgetsTable,
+      map,
+      where: 'id = ?',
+      whereArgs: [budget.id],
+    );
+    log('✅ [DB] Budget updated successfully');
+  }
+
+  // Delete budget
+  Future<void> deleteBudget(String id) async {
+    final db = await database;
+    
+    log('🗑️ [DB] Deleting budget: $id');
+    
+    await db.delete(
+      _budgetsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    log('✅ [DB] Budget deleted successfully');
+  }
+
+  // Get budget by ID
+  Future<BudgetModel?> getBudget(String id) async {
+    final db = await database;
+    
+    final maps = await db.query(
+      _budgetsTable,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return BudgetModel.fromJson(maps.first);
+    }
+    return null;
+  }
+
+  // Get all budgets for a user
+  Future<List<BudgetModel>> getAllBudgets(String userId) async {
+    final db = await database;
+    
+    final maps = await db.query(
+      _budgetsTable,
+      where: 'userId = ?',
+      whereArgs: [userId],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => BudgetModel.fromJson(map)).toList();
+  }
+
+  // Get budgets by period type
+  Future<List<BudgetModel>> getBudgetsByPeriod(String userId, String periodType) async {
+    final db = await database;
+    
+    final maps = await db.query(
+      _budgetsTable,
+      where: 'userId = ? AND periodType = ?',
+      whereArgs: [userId, periodType],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => BudgetModel.fromJson(map)).toList();
+  }
+
+  // Get budgets for a specific month
+  Future<List<BudgetModel>> getBudgetsForMonth(String userId, DateTime month) async {
+    final db = await database;
+    
+    final startOfMonth = DateTime(month.year, month.month, 1);
+    final endOfMonth = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+    
+    final startMillis = startOfMonth.millisecondsSinceEpoch;
+    final endMillis = endOfMonth.millisecondsSinceEpoch;
+    
+    final maps = await db.query(
+      _budgetsTable,
+      where: 'userId = ? AND startDate <= ? AND endDate >= ?',
+      whereArgs: [userId, endMillis, startMillis],
+      orderBy: 'startDate DESC',
+    );
+
+    return maps.map((map) => BudgetModel.fromJson(map)).toList();
+  }
+
+  // Get unsynced budgets
+  Future<List<BudgetModel>> getUnsyncedBudgets(String userId) async {
+    final db = await database;
+    
+    final maps = await db.query(
+      _budgetsTable,
+      where: 'userId = ? AND isSynced = ?',
+      whereArgs: [userId, 0],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => BudgetModel.fromJson(map)).toList();
+  }
+
+  // Mark budget as synced
+  Future<void> markBudgetAsSynced(String id) async {
+    final db = await database;
+    
+    await db.update(
+      _budgetsTable,
+      {'isSynced': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    
+    log('✅ [DB] Budget marked as synced: $id');
+  }
+
+  // Clear all budget data
+  Future<void> clearAllBudgetData() async {
+    final db = await database;
+    await db.delete(_budgetsTable);
+  }
+
+  // Clear budget data for a specific user
+  Future<void> clearUserBudgetData(String userId) async {
+    final db = await database;
+    await db.delete(
+      _budgetsTable,
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
   }
 }
