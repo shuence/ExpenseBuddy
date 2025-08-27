@@ -60,7 +60,17 @@ class UserService {
       // First check shared preferences (local storage) - fastest
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString('user_data');
-      UserModel? user = userJson != null ? UserModel.fromJson(jsonDecode(userJson)) : null;
+      
+      // Try to parse user data, if it fails due to old format, clear cache
+      UserModel? user;
+      try {
+        user = userJson != null ? UserModel.fromJson(jsonDecode(userJson)) : null;
+      } catch (e) {
+        // If parsing fails, clear the cached data and fetch fresh
+        print('Error parsing cached user data, clearing cache: $e');
+        await prefs.remove('user_data');
+        user = null;
+      }
 
       // If user exists in cache and cache is valid, return cached user
       if (user != null && await _isCacheValid()) {

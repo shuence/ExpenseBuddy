@@ -213,13 +213,13 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
           SharedPrefsService.getInstance().then((sp) async {
             await sp.saveUser(state.user);
             if (!mounted) return;
-            context.go(AppRoutes.home);
+            context.go(AppRoutes.home); // Keep context.go - resets navigation stack
           });
         } else if (state is AuthenticatedButNoPreferences) {
           SharedPrefsService.getInstance().then((sp) async {
             await sp.saveUser(state.user);
             if (!mounted) return;
-            context.go(AppRoutes.userPreferences);
+            context.push(AppRoutes.userPreferences);
           });
         } else if (state is AuthError) {
           if (mounted) {

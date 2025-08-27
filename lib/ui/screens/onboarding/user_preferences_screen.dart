@@ -3,8 +3,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/user_preferences_model.dart';
 import '../../../services/user_preferences_service.dart';
-import '../../../services/firebase_service.dart';
+import '../../../data/remote/auth_service.dart';
 import '../../../services/permission_service.dart';
+import '../../../services/shared_prefs_service.dart';
 import 'package:go_router/go_router.dart';
 import '../../../router/routes.dart';
 
@@ -17,7 +18,7 @@ class UserPreferencesScreen extends StatefulWidget {
 
 class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   final UserPreferencesService _preferencesService = UserPreferencesService();
-  final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
   final PermissionService _permissionService = PermissionService();
   
   Country? _selectedCountry;
@@ -181,7 +182,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userId = _firebaseService.currentUser?.uid;
+      final userId = _authService.currentUser?.uid;
       if (userId == null) {
         throw Exception('User not authenticated');
       }
@@ -221,6 +222,17 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
 
       // Mark setup as complete
       await _preferencesService.markSetupComplete(userId);
+
+      // Ensure user is saved to SharedPreferences
+      final user = _authService.currentUser;
+      if (user != null) {
+        final sp = await SharedPrefsService.getInstance();
+        // Get or create user model from AuthService
+        final userModel = await _authService.getUserModel();
+        if (userModel != null) {
+          await sp.saveUser(userModel);
+        }
+      }
 
       if (mounted) {
         // Navigate to home screen

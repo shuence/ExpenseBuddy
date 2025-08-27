@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserPreferencesModel extends Equatable {
   final String userId;
@@ -161,6 +162,9 @@ class UserPreferencesModel extends Equatable {
     } else if (dateValue is int) {
       // Handle timestamp in milliseconds
       return DateTime.fromMillisecondsSinceEpoch(dateValue);
+    } else if (dateValue is Timestamp) {
+      // Handle Firestore Timestamp objects
+      return dateValue.toDate();
     } else {
       // Fallback to current time
       return DateTime.now();

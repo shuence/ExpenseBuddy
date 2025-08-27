@@ -262,4 +262,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthError(e.toString()));
     }
   }
+
+  // Get current user from state
+  UserModel? get currentUser {
+    if (state is Authenticated) {
+      return (state as Authenticated).user;
+    } else if (state is AuthenticatedButNoPreferences) {
+      return (state as AuthenticatedButNoPreferences).user;
+    }
+    return null;
+  }
+
+  // Check if user is authenticated
+  bool get isAuthenticated {
+    return state is Authenticated || state is AuthenticatedButNoPreferences;
+  }
 }

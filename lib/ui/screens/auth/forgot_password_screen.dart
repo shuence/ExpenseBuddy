@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../router/routes.dart';
 import '../../../providers/auth_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -71,7 +70,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: const Text('OK'),
             onPressed: () {
               Navigator.of(context).pop(); // Close dialog
-              context.pop(); // Navigate back to previous screen
             },
           ),
         ],
@@ -164,7 +162,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         canPop: true,
         onPopInvoked: (didPop) {
           if (!didPop) {
-            context.pop();
+            Navigator.of(context).pop();
           } 
         },
         child: CupertinoPageScaffold(
@@ -179,7 +177,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             backgroundColor: CupertinoColors.white,
             leading: CupertinoNavigationBarBackButton(
-              onPressed: () => context.pop(),
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
           child: SafeArea(
@@ -331,7 +329,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Center(
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => context.go(AppRoutes.emailAuth),
+                    onPressed: () => Navigator.of(context).pop(), // Go back instead of navigating to new route
                     child: Text(
                       'Back to Sign In',
                       style: TextStyle(

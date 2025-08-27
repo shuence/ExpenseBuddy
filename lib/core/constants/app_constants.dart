@@ -24,4 +24,43 @@ class AppConstants {
   static const String reminderChannelId = 'expense_reminders';
   static const String reminderChannelName = 'Expense Reminders';
   static const String reminderChannelDescription = 'Reminders for expense tracking';
+  
+  // Expense Categories
+  static const List<String> expenseCategories = [
+    'Food & Dining',
+    'Transportation',
+    'Shopping',
+    'Entertainment',
+    'Healthcare',
+    'Education',
+    'Housing',
+    'Utilities',
+    'Insurance',
+    'Travel',
+    'Gifts',
+    'Other',
+  ];
+  
+  // Income Categories
+  static const List<String> incomeCategories = [
+    'Salary',
+    'Freelance',
+    'Investment',
+    'Business',
+    'Gifts',
+    'Other',
+  ];
+  
+  // Currencies
+  static const List<String> currencies = [
+    'USD',
+    'EUR',
+    'GBP',
+    'JPY',
+    'CAD',
+    'AUD',
+    'CHF',
+    'CNY',
+    'INR',
+  ];
 }

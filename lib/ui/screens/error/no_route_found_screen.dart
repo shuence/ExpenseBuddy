@@ -78,7 +78,7 @@ class NoRouteFoundScreen extends StatelessWidget {
                     width: double.infinity,
                     child: CupertinoButton.filled(
                       onPressed: () {
-                        context.go(AppRoutes.expenses);
+                        context.go(AppRoutes.home);
                       },
                       padding: EdgeInsets.symmetric(
                         vertical: ResponsiveConstants.spacing16,

@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/app_theme.dart';
-import '../expenses/add_expense_screen.dart';
+import '../transactions/add_transaction_screen.dart';
+import '../transactions/transactions_list_screen.dart';
+import '../budget/budget_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -102,41 +104,15 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       case 1:
         return CupertinoTabView(
-          builder: (context) => CupertinoPageScaffold(
-            navigationBar: CupertinoNavigationBar(
-              middle: Text(
-                'Transactions',
-                style: TextStyle(
-                  color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
-              border: null,
-            ),
-            child: const Center(child: Text('Transactions')),
-          ),
+          builder: (context) => const TransactionsListScreen(),
         );
       case 2:
         return CupertinoTabView(
-          builder: (context) => const AddExpenseScreen(),
+          builder: (context) => const AddTransactionScreen(),
         );
       case 3:
         return CupertinoTabView(
-          builder: (context) => CupertinoPageScaffold(
-            navigationBar: CupertinoNavigationBar(
-              middle: Text(
-                'Budget',
-                style: TextStyle(
-                  color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
-              border: null,
-            ),
-            child: const Center(child: Text('Budget')),
-          ),
+          builder: (context) => const BudgetScreen(),
         );
       case 4:
         return CupertinoTabView(
@@ -157,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       default:
         return CupertinoTabView(
-          builder: (context) => const AddExpenseScreen(),
+          builder: (context) => const AddTransactionScreen(),
         );
     }
   }

@@ -5,6 +5,7 @@ import '../../../core/constants/responsive_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../router/routes.dart';
 import '../../../services/shared_prefs_service.dart';
+import '../../../services/user_preferences_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -54,21 +55,38 @@ class _SplashScreenState extends State<SplashScreen>
             final isFirst = sp.isFirstLaunch();
             final user = sp.getUser();
             if (!mounted) return;
+            
             if (user != null) {
-              context.go(AppRoutes.home);
+              // User exists, check if they have completed preferences setup
+              try {
+                final preferencesService = UserPreferencesService();
+                final preferencesExist = await preferencesService.preferencesExist(user.uid);
+                
+                if (preferencesExist) {
+                  // User has completed preferences setup, go to home
+                  context.go(AppRoutes.home);
+                } else {
+                  // User exists but hasn't completed preferences setup
+                  context.go(AppRoutes.userPreferences);
+                }
+              } catch (e) {
+                debugPrint('Error checking user preferences: $e');
+                // If preferences check fails, assume they need to set them up
+                context.go(AppRoutes.userPreferences);
+              }
             } else if (isFirst) {
-              context.go(AppRoutes.onboarding);
+              context.go(AppRoutes.onboardingPage1);
             } else {
               context.go(AppRoutes.login);
             }
           } catch (e) {
             if (!mounted) return;
-            context.go(AppRoutes.onboarding);
+            context.go(AppRoutes.onboardingPage1);
           }
         } catch (e) {
           debugPrint('Navigation failed, using emergency navigation: $e');
           // Fallback
-          if (mounted) context.go(AppRoutes.onboarding);
+          if (mounted) context.go(AppRoutes.onboardingPage1);
         }
       }
     });

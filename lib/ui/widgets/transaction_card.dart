@@ -1,15 +1,12 @@
 import 'package:flutter/cupertino.dart';
-import '../../models/expense.dart';
 import '../../core/theme/app_theme.dart';
 
 class ExpenseCard extends StatelessWidget {
-  final Expense expense;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
   
   const ExpenseCard({
     super.key,
-    required this.expense,
     this.onTap,
     this.onDelete,
   });
@@ -43,7 +40,7 @@ class ExpenseCard extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        expense.category[0].toUpperCase(),
+                        'Expense',
                         style: TextStyle(
                           color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
                           fontWeight: FontWeight.bold
@@ -57,7 +54,7 @@ class ExpenseCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          expense.title,
+                          'Expense',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -65,7 +62,7 @@ class ExpenseCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          expense.category,
+                          'Expense',
                           style: TextStyle(
                             color: AppTheme.getTextSecondaryColor(CupertinoTheme.brightnessOf(context)),
                             fontSize: 14,
@@ -78,7 +75,7 @@ class ExpenseCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${expense.currency} ${expense.amount.toStringAsFixed(2)}',
+                        '100',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -86,7 +83,7 @@ class ExpenseCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${expense.date.day}/${expense.date.month}/${expense.date.year}',
+                          '100',
                         style: TextStyle(
                           color: AppTheme.getTextSecondaryColor(CupertinoTheme.brightnessOf(context)),
                           fontSize: 12,

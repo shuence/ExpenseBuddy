@@ -7,8 +7,6 @@ class UserModel extends Equatable {
   final String? photoURL;
   final String provider;
   final String? fcmToken;
-  final DateTime? createdAt;
-  final DateTime? lastLoginAt;
   final bool isEmailVerified;
   final String? phoneNumber;
 
@@ -19,8 +17,6 @@ class UserModel extends Equatable {
     this.photoURL,
     required this.provider,
     this.fcmToken,
-    this.createdAt,
-    this.lastLoginAt,
     required this.isEmailVerified,
     this.phoneNumber,
   });
@@ -33,15 +29,8 @@ class UserModel extends Equatable {
       photoURL: json['photoURL'],
       provider: json['provider'] ?? 'email',
       fcmToken: json['fcmToken'],
-      createdAt: json['createdAt'] != null 
-          ? _parseDateTime(json['createdAt'])
-          : null,
-      lastLoginAt: json['lastLoginAt'] != null 
-          ? _parseDateTime(json['lastLoginAt'])
-          : null,
       isEmailVerified: json['isEmailVerified'] ?? false,
       phoneNumber: json['phoneNumber'],
-      
     );
   }
 
@@ -53,11 +42,8 @@ class UserModel extends Equatable {
       'photoURL': photoURL,
       'provider': provider,
       'fcmToken': fcmToken,
-      'createdAt': createdAt?.toIso8601String(),
-      'lastLoginAt': lastLoginAt?.toIso8601String(),
       'isEmailVerified': isEmailVerified,
       'phoneNumber': phoneNumber,
-      
     };
   }
 
@@ -68,11 +54,8 @@ class UserModel extends Equatable {
     String? photoURL,
     String? provider,
     String? fcmToken,
-    DateTime? createdAt,
-    DateTime? lastLoginAt,
     bool? isEmailVerified,
     String? phoneNumber,
-    
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -81,31 +64,9 @@ class UserModel extends Equatable {
       photoURL: photoURL ?? this.photoURL,
       provider: provider ?? this.provider,
       fcmToken: fcmToken ?? this.fcmToken,
-      createdAt: createdAt ?? this.createdAt,
-      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       phoneNumber: phoneNumber ?? this.phoneNumber,
     );
-  }
-
-  // Helper method to parse DateTime from various formats
-  static DateTime? _parseDateTime(dynamic dateValue) {
-    if (dateValue is DateTime) {
-      return dateValue;
-    } else if (dateValue is String) {
-      try {
-        return DateTime.parse(dateValue);
-      } catch (e) {
-        // If parsing fails, return null
-        return null;
-      }
-    } else if (dateValue is int) {
-      // Handle timestamp in milliseconds
-      return DateTime.fromMillisecondsSinceEpoch(dateValue);
-    } else {
-      // Fallback to null
-      return null;
-    }
   }
 
   @override
@@ -116,8 +77,6 @@ class UserModel extends Equatable {
     photoURL,
     provider,
     fcmToken,
-    createdAt,
-    lastLoginAt,
     isEmailVerified,
     phoneNumber,
   ];

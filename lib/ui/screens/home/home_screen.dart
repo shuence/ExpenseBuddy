@@ -1,0 +1,189 @@
+import 'package:flutter/cupertino.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/responsive_constants.dart';
+import '../../../models/user_model.dart';
+import '../../../services/user_service.dart';
+import '../../../router/routes.dart';
+import '../../widgets/greeting_section.dart';
+import '../../widgets/balance_card.dart';
+import '../../widgets/overview_stats.dart';
+import '../../widgets/recent_transactions.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  UserModel? _currentUser;
+  bool _isLoading = true;
+  final UserService _userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _userService.getCurrentUser();
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveConstants.spacing16,
+            vertical: ResponsiveConstants.spacing12,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Greeting Section
+              GreetingSection(
+                currentUser: _currentUser,
+                isLoading: _isLoading,
+                userService: _userService,
+              ),
+              
+              SizedBox(height: ResponsiveConstants.spacing20),
+              
+              // Total Balance Card
+              const BalanceCard(balance: '\$12,458.90'),
+              
+              SizedBox(height: ResponsiveConstants.spacing20),
+              
+              // Overview Stats (Income, Expenses, Savings)
+              const OverviewStats(),
+              
+              SizedBox(height: ResponsiveConstants.spacing24),
+              
+              // Navigation Buttons Section
+              _buildNavigationButtons(context),
+              
+              SizedBox(height: ResponsiveConstants.spacing24),
+              
+              // Recent Transactions Section
+              const RecentTransactions(),
+              
+              SizedBox(height: ResponsiveConstants.spacing80), // Bottom padding for nav bar
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildNavigationButton(
+            context: context,
+            icon: CupertinoIcons.chart_pie,
+            title: 'Budget',
+            subtitle: 'Manage your budget',
+            onTap: () {
+              // Navigate to budget screen
+              context.push(AppRoutes.budget);
+            },
+          ),
+        ),
+        SizedBox(width: ResponsiveConstants.spacing12),
+        Expanded(
+          child: _buildNavigationButton(
+            context: context,
+            icon: CupertinoIcons.list_bullet,
+            title: 'Transactions',
+            subtitle: 'View all transactions',
+            onTap: () {
+              // Navigate to transactions screen
+              context.push(AppRoutes.transactions);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Container(
+        padding: EdgeInsets.all(ResponsiveConstants.spacing16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+          border: Border.all(
+            color: CupertinoColors.systemGrey5.resolveFrom(context),
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.systemGrey4.resolveFrom(context).withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: const Color(0xFF2ECC71),
+            ),
+            SizedBox(height: ResponsiveConstants.spacing8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: ResponsiveConstants.fontSize16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+              ),
+            ),
+            SizedBox(height: ResponsiveConstants.spacing4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: ResponsiveConstants.fontSize12,
+                color: CupertinoColors.systemGrey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

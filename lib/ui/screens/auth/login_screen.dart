@@ -92,9 +92,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          context.go(AppRoutes.home);
+          context.go(AppRoutes.home); // Keep context.go - resets navigation stack
         } else if (state is AuthenticatedButNoPreferences) {
-          context.go(AppRoutes.userPreferences);
+          context.push(AppRoutes.userPreferences);
         } else if (state is AuthError) {
           _showErrorDialog('Authentication Error', state.message);
         }

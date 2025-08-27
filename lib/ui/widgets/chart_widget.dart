@@ -1,26 +1,17 @@
 import 'package:flutter/cupertino.dart';
-import '../../models/expense.dart';
 import '../../core/theme/app_theme.dart';
 
 class ChartWidget extends StatelessWidget {
-  final List<Expense> expenses;
   final String currency;
   
   const ChartWidget({
     super.key,
-    required this.expenses,
     required this.currency,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Group expenses by category
-    final Map<String, double> categoryTotals = {};
-    
-    for (final expense in expenses) {
-      categoryTotals[expense.category] = (categoryTotals[expense.category] ?? 0) + expense.amount;
-    }
-    
+    final categoryTotals = {};
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),

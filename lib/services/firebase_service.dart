@@ -195,8 +195,6 @@ class FirebaseService {
         'photoURL': photoURL ?? user.photoURL,
         'provider': provider ?? 'email',
         'fcmToken': fcmToken,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLoginAt': FieldValue.serverTimestamp(),
         'isEmailVerified': user.emailVerified,
         'phoneNumber': user.phoneNumber,
         'notificationSettings': {

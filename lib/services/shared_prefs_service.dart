@@ -98,6 +98,12 @@ class SharedPrefsService {
     await _prefs!.clear();
   }
   
+  // Clear user data specifically
+  Future<void> clearUserData() async {
+    await _prefs!.remove(_userKey);
+    await _prefs!.remove(_authTokenKey);
+  }
+  
   // Check if user is logged in
   bool isLoggedIn() {
     return getUser() != null && getAuthToken() != null;
