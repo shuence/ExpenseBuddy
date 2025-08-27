@@ -83,6 +83,16 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     
-    // Google Play Core for deferred components support
-    implementation("com.google.android.play:core:1.10.3")
+    // Ensure we use the latest Play Core Common
+    implementation("com.google.android.play:core-common:2.0.3")
+}
+
+// Force resolution of Play Core dependencies to avoid conflicts
+configurations.all {
+    resolutionStrategy {
+        force("com.google.android.play:core-common:2.0.3")
+        // Prefer newer versions of conflicting dependencies
+        preferProjectModules()
+    }
+    exclude(group = "com.google.android.play", module = "core")
 }
