@@ -3,6 +3,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/budget_model.dart';
 import '../../../services/budget_service.dart';
+import '../../../services/user_service.dart';
 
 class AdjustBudgetScreen extends StatefulWidget {
   const AdjustBudgetScreen({super.key});
@@ -34,7 +35,16 @@ class _AdjustBudgetScreenState extends State<AdjustBudgetScreen> {
 
   Future<void> _loadBudgets() async {
     try {
-      final budgets = await _budgetService.getAllBudgets();
+      final userService = UserService();
+      final currentUser = await userService.getCurrentUser();
+      final userId = currentUser?.uid;
+      
+      if (userId == null) {
+        _showErrorDialog('User not found. Please log in again.');
+        return;
+      }
+
+      final budgets = await _budgetService.getAllBudgets(userId);
       if (mounted) {
         setState(() {
           _budgets = budgets;

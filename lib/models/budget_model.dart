@@ -8,6 +8,9 @@ class BudgetModel {
   final DateTime startDate;
   final DateTime endDate;
   final String color;
+  final String? userId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   BudgetModel({
     required this.id,
@@ -19,6 +22,9 @@ class BudgetModel {
     required this.startDate,
     required this.endDate,
     required this.color,
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
   });
 
   double get remainingAmount => allocatedAmount - spentAmount;
@@ -40,21 +46,36 @@ class BudgetModel {
 
   factory BudgetModel.fromJson(Map<String, dynamic> json) {
     return BudgetModel(
-      id: json['id'],
-      name: json['name'],
-      icon: json['icon'],
-      allocatedAmount: json['allocatedAmount'].toDouble(),
-      spentAmount: json['spentAmount'].toDouble(),
-      periodType: json['periodType'],
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      color: json['color'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      icon: json['icon'] ?? '📝',
+      allocatedAmount: (json['allocatedAmount'] as num?)?.toDouble() ?? 0.0,
+      spentAmount: (json['spentAmount'] as num?)?.toDouble() ?? 0.0,
+      periodType: json['periodType'] ?? 'monthly',
+      startDate: _parseDateTime(json['startDate']) ?? DateTime.now(),
+      endDate: _parseDateTime(json['endDate']) ?? DateTime.now().add(const Duration(days: 30)),
+      color: json['color'] ?? '#2ECC71',
+      userId: json['userId'],
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
     );
+  }
+
+  static DateTime? _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return null;
+    if (dateValue is DateTime) return dateValue;
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'icon': icon,
       'allocatedAmount': allocatedAmount,
@@ -63,6 +84,9 @@ class BudgetModel {
       'startDate': startDate.toIso8601String(),
       'endDate': endDate.toIso8601String(),
       'color': color,
+      'userId': userId,
+      'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
+      'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
     };
   }
 }

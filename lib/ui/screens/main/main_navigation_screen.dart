@@ -144,12 +144,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           tabBuilder: (context, index) {
             // Handle center button (Add transaction)
             if (index == 2) {
-              return CupertinoTabView(
-                builder: (context) => CupertinoPageScaffold(
-                  child: Center(
-                    child: Text('Add Transaction'),
-                  ),
-                ),
+              return CupertinoPageScaffold(
+                child: TransactionsScreen()
               );
             }
 

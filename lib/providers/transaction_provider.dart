@@ -40,6 +40,7 @@ class TransactionProvider extends ChangeNotifier {
     try {
       await _transactionsService.addTransaction(transaction);
       _transactions.add(transaction);
+      _transactions.sort((a, b) => b.date.compareTo(a.date)); // Keep sorted
       _isLoading = false;
       notifyListeners();
     } catch (e) {

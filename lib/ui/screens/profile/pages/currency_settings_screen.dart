@@ -3,6 +3,7 @@ import '../../../../models/user_preferences_model.dart';
 import '../../../../services/user_preferences_service.dart';
 import '../widgets/settings_item.dart';
 import '../widgets/settings_section.dart';
+import '../../../widgets/currency_icon.dart';
 
 class CurrencySettingsScreen extends StatefulWidget {
   const CurrencySettingsScreen({super.key});
@@ -96,10 +97,11 @@ class _CurrencySettingsScreenState extends State<CurrencySettingsScreen> {
                                 color: CupertinoColors.activeGreen,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
-                                CupertinoIcons.money_dollar,
-                                color: CupertinoColors.white,
-                                size: 18,
+                              child: Center(
+                                child: CurrencyIcon(
+                                  currencyCode: _preferences?.defaultCurrency ?? 'USD',
+                                  size: 18,
+                                ),
                               ),
                             ),
                             title: _getCurrentCurrencyName(),
@@ -136,15 +138,9 @@ class _CurrencySettingsScreenState extends State<CurrencySettingsScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
-                                child: Text(
-                                  currency['symbol']!,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected 
-                                        ? CupertinoColors.white 
-                                        : CupertinoColors.label,
-                                  ),
+                                child: CurrencyIcon(
+                                  currencyCode: currency['code']!,
+                                  size: 16,
                                 ),
                               ),
                             ),

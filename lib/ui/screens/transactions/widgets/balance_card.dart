@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/responsive_constants.dart';
+import '../../../../utils/currency_utils.dart';
 
 class BalanceCard extends StatelessWidget {
   final double totalBalance;
@@ -148,23 +149,7 @@ class BalanceCard extends StatelessWidget {
   }
 
   String _formatCurrency(double amount, String currency) {
-    String symbol = '\$';
-    switch (currency.toUpperCase()) {
-      case 'EUR':
-        symbol = '€';
-        break;
-      case 'GBP':
-        symbol = '£';
-        break;
-      case 'JPY':
-        symbol = '¥';
-        break;
-      case 'INR':
-        symbol = '₹';
-        break;
-      default:
-        symbol = '\$';
-    }
+    final symbol = CurrencyUtils.getCurrencySymbol(currency);
     
     // Format with commas for thousands
     final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');

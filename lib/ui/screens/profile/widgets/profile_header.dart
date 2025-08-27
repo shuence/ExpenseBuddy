@@ -127,7 +127,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                 Text(
                   _actualUser?.email ?? 'Loading...',
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 12,
                     color: CupertinoColors.systemGrey,
                   ),
                 ),

@@ -2,12 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/responsive_constants.dart';
 import '../../../models/transaction_model.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../services/user_service.dart';
+import '../../../utils/currency_utils.dart';
 import '../../../router/routes.dart';
 import 'transaction_details_screen.dart';
-import 'widgets/transaction_list.dart';
 
 enum TransactionFilter { all, income, expense }
 
@@ -20,113 +20,47 @@ class TransactionsListScreen extends StatefulWidget {
 
 class _TransactionsListScreenState extends State<TransactionsListScreen> {
   TransactionFilter _selectedFilter = TransactionFilter.all;
-  List<TransactionModel> _allTransactions = [];
-  List<TransactionModel> _filteredTransactions = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
+    _loadTransactions();
   }
 
-  void _loadSampleData() {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Sample data
-    _allTransactions = [
-      TransactionModel(
-        id: '1',
-        title: 'Grocery Shopping',
-        amount: 85.50,
-        category: 'Food',
-        date: DateTime.now().subtract(const Duration(hours: 2)),
-        userId: 'user123',
-        currency: 'USD',
-        type: TransactionType.expense,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        description: 'Weekly grocery shopping at the local supermarket',
-      ),
-      TransactionModel(
-        id: '2',
-        title: 'Salary',
-        amount: 3500.00,
-        category: 'Income',
-        date: DateTime.now().subtract(const Duration(days: 1)),
-        userId: 'user123',
-        currency: 'USD',
-        type: TransactionType.income,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      TransactionModel(
-        id: '3',
-        title: 'Uber Ride',
-        amount: 12.75,
-        category: 'Transport',
-        date: DateTime.now().subtract(const Duration(hours: 6)),
-        userId: 'user123',
-        currency: 'USD',
-        type: TransactionType.expense,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        description: 'Ride to downtown office',
-      ),
-      TransactionModel(
-        id: '4',
-        title: 'Electric Bill',
-        amount: 89.30,
-        category: 'Bills',
-        date: DateTime.now().subtract(const Duration(days: 2)),
-        userId: 'user123',
-        currency: 'USD',
-        type: TransactionType.expense,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-      TransactionModel(
-        id: '5',
-        title: 'Netflix Subscription',
-        amount: 15.99,
-        category: 'Entertainment',
-        date: DateTime.now().subtract(const Duration(days: 3)),
-        userId: 'user123',
-        currency: 'USD',
-        type: TransactionType.expense,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-
-    _applyFilter();
+  void _loadTransactions() async {
+    // Load transactions using the provider
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
     
-    setState(() {
-      _isLoading = false;
-    });
+    // Get current user ID from auth service or user service
+    try {
+      final userService = UserService();
+      final currentUser = await userService.getCurrentUser();
+      if (currentUser != null) {
+        await transactionProvider.loadTransactions(currentUser.uid);
+      }
+    } catch (e) {
+      print('Error loading transactions: $e');
+    }
   }
 
-  void _applyFilter() {
+  List<TransactionModel> _getFilteredTransactions(TransactionProvider provider) {
+    List<TransactionModel> filtered;
+    
     switch (_selectedFilter) {
       case TransactionFilter.all:
-        _filteredTransactions = _allTransactions;
+        filtered = provider.transactions;
         break;
       case TransactionFilter.income:
-        _filteredTransactions = _allTransactions
-            .where((t) => t.type == TransactionType.income)
-            .toList();
+        filtered = provider.income;
         break;
       case TransactionFilter.expense:
-        _filteredTransactions = _allTransactions
-            .where((t) => t.type == TransactionType.expense)
-            .toList();
+        filtered = provider.expenses;
         break;
     }
     
     // Sort by date (newest first)
-    _filteredTransactions.sort((a, b) => b.date.compareTo(a.date));
+    filtered.sort((a, b) => b.date.compareTo(a.date));
+    return filtered;
   }
 
   void _onTransactionTap(TransactionModel transaction) {
@@ -139,8 +73,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
   }
 
   Future<void> _refreshTransactions() async {
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network call
-    _loadSampleData();
+    _loadTransactions();
   }
 
   @override
@@ -235,7 +168,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                           const SizedBox(height: 16),
                           CupertinoButton(
                             onPressed: () {
-                              provider.loadTransactions('demo_user');
+                              _refreshTransactions();
                             },
                             child: const Text('Retry'),
                           ),
@@ -244,25 +177,39 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                     );
                   }
 
-                  final filteredTransactions = _selectedFilter == TransactionType.expense
-                      ? provider.expenses
-                      : provider.income;
+                  final filteredTransactions = _getFilteredTransactions(provider);
 
                   if (filteredTransactions.isEmpty) {
+                    String filterText = '';
+                    IconData iconData = CupertinoIcons.list_bullet;
+                    
+                    switch (_selectedFilter) {
+                      case TransactionFilter.all:
+                        filterText = 'transactions';
+                        iconData = CupertinoIcons.list_bullet;
+                        break;
+                      case TransactionFilter.income:
+                        filterText = 'income';
+                        iconData = CupertinoIcons.arrow_up_circle;
+                        break;
+                      case TransactionFilter.expense:
+                        filterText = 'expenses';
+                        iconData = CupertinoIcons.arrow_down_circle;
+                        break;
+                    }
+                    
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _selectedFilter == TransactionType.expense
-                                ? CupertinoIcons.money_dollar_circle
-                                : CupertinoIcons.arrow_up_circle,
+                            iconData,
                             size: 64,
                             color: CupertinoColors.systemGrey3,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No ${_selectedFilter == TransactionType.expense ? 'expenses' : 'income'} yet',
+                            'No $filterText yet',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
@@ -271,24 +218,45 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Add your first ${_selectedFilter == TransactionType.expense ? 'expense' : 'income'} to get started',
+                            'Add your first transaction to get started',
                             style: const TextStyle(
                               fontSize: 14,
                               color: CupertinoColors.systemGrey2,
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          CupertinoButton.filled(
+                            onPressed: () {
+                              context.push(AppRoutes.addTransaction);
+                            },
+                            child: const Text('Add Transaction'),
                           ),
                         ],
                       ),
                     );
                   }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredTransactions.length,
-                    itemBuilder: (context, index) {
-                      final transaction = filteredTransactions[index];
-                      return _buildTransactionCard(transaction);
-                    },
+                  return CustomScrollView(
+                    slivers: [
+                      CupertinoSliverRefreshControl(
+                        onRefresh: _refreshTransactions,
+                      ),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final transaction = filteredTransactions[index];
+                            return GestureDetector(
+                              onTap: () => _onTransactionTap(transaction),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: _buildTransactionCard(transaction),
+                              ),
+                            );
+                          },
+                          childCount: filteredTransactions.length,
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -374,7 +342,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isExpense ? '-' : '+'}${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
+                  '${isExpense ? '-' : '+'}${CurrencyUtils.getCurrencySymbol(transaction.currency)}${transaction.amount.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

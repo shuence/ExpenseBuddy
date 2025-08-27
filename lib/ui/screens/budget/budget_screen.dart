@@ -1,13 +1,16 @@
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../models/budget_model.dart';
-import '../../../services/budget_service.dart';
+import '../../../services/user_service.dart';
+import '../../../services/user_preferences_service.dart';
+import '../../../providers/budget_provider.dart';
 import '../../widgets/budget_header.dart';
 import '../../widgets/budget_summary_card.dart';
 import '../../widgets/budget_category_item.dart';
 import 'add_budget_screen.dart';
 import 'adjust_budget_screen.dart';
+import 'budget_details_screen.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -17,36 +20,85 @@ class BudgetScreen extends StatefulWidget {
 }
 
 class _BudgetScreenState extends State<BudgetScreen> {
-  final BudgetService _budgetService = BudgetService();
-  BudgetSummary? _budgetSummary;
-  bool _isLoading = true;
-  String _currentMonth = 'September 2023';
+  final UserService _userService = UserService();
+  final UserPreferencesService _preferencesService = UserPreferencesService();
+  late DateTime _selectedDate;
+  List<DateTime> _availableMonths = [];
+  String _userCurrency = 'USD';
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime.now();
+    _generateAvailableMonths();
+    _loadUserPreferences();
     _loadBudgetData();
+  }
+
+  void _generateAvailableMonths() {
+    final now = DateTime.now();
+    _availableMonths = [];
+    
+    // Generate months from 6 months ago to 6 months in the future
+    for (int i = -6; i <= 6; i++) {
+      final month = DateTime(now.year, now.month + i, 1);
+      _availableMonths.add(month);
+    }
+  }
+
+  String _formatMonth(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  String get _currentMonthString => _formatMonth(_selectedDate);
+
+  Future<void> _loadUserPreferences() async {
+    try {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser != null) {
+        final preferences = await _preferencesService.getUserPreferences(currentUser.uid);
+        setState(() {
+          _userCurrency = preferences?.defaultCurrency ?? 'USD';
+        });
+      }
+    } catch (e) {
+      print('Error loading user preferences: $e');
+    }
   }
 
   Future<void> _loadBudgetData() async {
     try {
-      final budgetSummary = await _budgetService.getBudgetSummary();
-      if (mounted) {
-        setState(() {
-          _budgetSummary = budgetSummary;
-          _isLoading = false;
-        });
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser != null && mounted) {
+        final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+        await budgetProvider.loadBudgetsForMonth(currentUser.uid, _selectedDate);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      print('Error loading budget data: $e');
+    }
+  }
+
+  Future<void> _refreshBudgetData() async {
+    try {
+      final currentUser = await _userService.getCurrentUser();
+      if (currentUser != null && mounted) {
+        final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+        await budgetProvider.refreshBudgetsForMonth(currentUser.uid, _selectedDate);
       }
+    } catch (e) {
+      print('Error refreshing budget data: $e');
     }
   }
 
   void _showMonthPicker() {
+    int selectedIndex = _availableMonths.indexWhere((month) => 
+      month.year == _selectedDate.year && month.month == _selectedDate.month);
+    if (selectedIndex == -1) selectedIndex = 6; // Default to current month
+
     showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
@@ -85,7 +137,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   CupertinoButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      // TODO: Update month selection
+                      _loadBudgetData(); // Reload data for selected month
                     },
                     child: Text(
                       'Done',
@@ -100,23 +152,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
             Expanded(
               child: CupertinoPicker(
                 itemExtent: 40,
+                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
                 onSelectedItemChanged: (index) {
-                  // TODO: Handle month selection
+                  setState(() {
+                    _selectedDate = _availableMonths[index];
+                  });
                 },
-                children: const [
-                  Center(child: Text('January 2023')),
-                  Center(child: Text('February 2023')),
-                  Center(child: Text('March 2023')),
-                  Center(child: Text('April 2023')),
-                  Center(child: Text('May 2023')),
-                  Center(child: Text('June 2023')),
-                  Center(child: Text('July 2023')),
-                  Center(child: Text('August 2023')),
-                  Center(child: Text('September 2023')),
-                  Center(child: Text('October 2023')),
-                  Center(child: Text('November 2023')),
-                  Center(child: Text('December 2023')),
-                ],
+                children: _availableMonths.map((month) => 
+                  Center(child: Text(_formatMonth(month)))
+                ).toList(),
               ),
             ),
           ],
@@ -172,72 +216,180 @@ class _BudgetScreenState extends State<BudgetScreen> {
         ),
       ),
       backgroundColor: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
-      child: _isLoading
-          ? const Center(
+      child: Consumer<BudgetProvider>(
+        builder: (context, budgetProvider, child) {
+          if (budgetProvider.isLoading) {
+            return const Center(
               child: CupertinoActivityIndicator(radius: 16),
-            )
-          : CustomScrollView(
-              slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _getHorizontalPadding(context),
-                        vertical: _getVerticalPadding(context),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header with month selector and title
-                          BudgetHeader(
-                            currentMonth: _currentMonth,
-                            onMonthTap: _showMonthPicker,
-                          ),
-                          
-                          SizedBox(height: ResponsiveConstants.spacing16),
-                          
-                          // Action Buttons at top
-                          _buildActionButtons(context),
-                          
-                          SizedBox(height: _getSectionSpacing(context)),
-                          
-                          // Budget Summary Card with circular progress
-                          if (_budgetSummary != null)
-                            BudgetSummaryCard(budgetSummary: _budgetSummary!),
-                          
-                          SizedBox(height: _getSectionSpacing(context)),
-                        ],
-                      ),
+            );
+          }
+          
+          if (budgetProvider.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    size: 64,
+                    color: CupertinoColors.systemOrange,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error loading budgets',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoColors.systemGrey,
                     ),
                   ),
-                  
-                  // Budget Categories List
-                  if (_budgetSummary != null)
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _getHorizontalPadding(context),
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final budget = _budgetSummary!.budgets[index];
-                            return BudgetCategoryItem(
-                              budget: budget,
-                              onTap: () {
-                                // TODO: Navigate to budget details
-                              },
-                            );
-                          },
-                          childCount: _budgetSummary!.budgets.length,
-                        ),
-                      ),
+                  SizedBox(height: 8),
+                  Text(
+                    budgetProvider.error!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey2,
                     ),
-                  
-                  // Bottom padding for navigation bar
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: _getBottomPadding(context)),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  CupertinoButton.filled(
+                    onPressed: _loadBudgetData,
+                    child: Text('Retry'),
                   ),
                 ],
               ),
+            );
+          }
+          
+          final budgetSummary = budgetProvider.budgetSummary;
+          final budgets = budgetProvider.budgets;
+          
+          return CustomScrollView(
+            slivers: [
+              CupertinoSliverRefreshControl(
+                onRefresh: _refreshBudgetData,
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _getHorizontalPadding(context),
+                    vertical: _getVerticalPadding(context),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with month selector and title
+                      BudgetHeader(
+                        currentMonth: _currentMonthString,
+                        onMonthTap: _showMonthPicker,
+                      ),
+                      
+                      SizedBox(height: ResponsiveConstants.spacing16),
+                      
+                      // Action Buttons at top
+                      _buildActionButtons(context),
+                      
+                      SizedBox(height: _getSectionSpacing(context)),
+                      
+                      // Budget Summary Card with circular progress
+                      if (budgetSummary != null)
+                        BudgetSummaryCard(
+                          budgetSummary: budgetSummary,
+                          currency: _userCurrency,
+                        )
+                      else if (budgets.isEmpty)
+                        _buildEmptyBudgetCard(context),
+                      
+                      SizedBox(height: _getSectionSpacing(context)),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Budget Categories List
+              if (budgets.isNotEmpty)
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _getHorizontalPadding(context),
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final budget = budgets[index];
+                        return BudgetCategoryItem(
+                          budget: budget,
+                          currency: _userCurrency,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => BudgetDetailsScreen(budget: budget),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      childCount: budgets.length,
+                    ),
+                  ),
+                ),
+              
+              // Bottom padding for navigation bar
+              SliverToBoxAdapter(
+                child: SizedBox(height: _getBottomPadding(context)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyBudgetCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(ResponsiveConstants.spacing24),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(ResponsiveConstants.radius16),
+        border: Border.all(
+          color: CupertinoColors.systemGrey5.resolveFrom(context),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            CupertinoIcons.chart_pie,
+            size: 64,
+            color: CupertinoColors.systemGrey3,
+          ),
+          SizedBox(height: ResponsiveConstants.spacing16),
+          Text(
+            'No budgets yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+            ),
+          ),
+          SizedBox(height: ResponsiveConstants.spacing8),
+          Text(
+            'Create your first budget to start tracking your spending',
+            style: TextStyle(
+              fontSize: 14,
+              color: CupertinoColors.systemGrey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: ResponsiveConstants.spacing16),
+          CupertinoButton.filled(
+            onPressed: _navigateToAddBudget,
+            child: Text('Create Budget'),
+          ),
+        ],
+      ),
     );
   }
 

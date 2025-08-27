@@ -8,6 +8,7 @@ import '../../../services/permission_service.dart';
 import '../../../services/shared_prefs_service.dart';
 import 'package:go_router/go_router.dart';
 import '../../../router/routes.dart';
+import '../../widgets/currency_icon.dart';
 
 class UserPreferencesScreen extends StatefulWidget {
   const UserPreferencesScreen({super.key});
@@ -283,7 +284,10 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                 Text(country.name),
                 Row(
                   children: [
-                    Text(country.flag),
+                    CurrencyIcon(
+                      currencyCode: country.currencyCode,
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Text('${country.currencyCode} (${country.currencySymbol})'),
                   ],
@@ -367,7 +371,10 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
             child: Row(
               children: [
                 if (_selectedCountry != null) ...[
-                  Text(_selectedCountry!.flag, style: const TextStyle(fontSize: 24)),
+                  CurrencyIcon(
+                    currencyCode: _selectedCountry!.currencyCode,
+                    size: 24,
+                  ),
                   SizedBox(width: ResponsiveConstants.spacing16),
                   Expanded(
                     child: Column(

@@ -1,39 +1,92 @@
 import 'package:flutter/cupertino.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/responsive_constants.dart';
+import '../../models/transaction_model.dart';
+import '../../router/routes.dart';
+import '../../utils/currency_utils.dart';
 
 class RecentTransactions extends StatelessWidget {
-  const RecentTransactions({super.key});
+  final List<TransactionModel> transactions;
+  final VoidCallback? onSeeAllPressed;
+  final Function(TransactionModel)? onTransactionTap;
+
+  const RecentTransactions({
+    super.key,
+    required this.transactions,
+    this.onSeeAllPressed,
+    this.onTransactionTap,
+  });
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'food':
+      case 'food & dining':
+      case 'groceries':
+        return CupertinoIcons.cart_fill;
+      case 'transportation':
+      case 'transport':
+        return CupertinoIcons.car_fill;
+      case 'entertainment':
+        return CupertinoIcons.gamecontroller_fill;
+      case 'bills':
+      case 'utilities':
+        return CupertinoIcons.bolt_fill;
+      case 'income':
+      case 'salary':
+        return CupertinoIcons.money_dollar_circle_fill;
+      case 'shopping':
+        return CupertinoIcons.bag_fill;
+      case 'healthcare':
+        return CupertinoIcons.heart_fill;
+      default:
+        return CupertinoIcons.circle_fill;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'food':
+      case 'food & dining':
+      case 'groceries':
+        return const Color(0xFF4CAF50);
+      case 'transportation':
+      case 'transport':
+        return CupertinoColors.systemBlue;
+      case 'entertainment':
+        return const Color(0xFF9C27B0);
+      case 'bills':
+      case 'utilities':
+        return CupertinoColors.systemOrange;
+      case 'income':
+      case 'salary':
+        return const Color(0xFF2ECC71);
+      case 'shopping':
+        return CupertinoColors.systemPink;
+      case 'healthcare':
+        return CupertinoColors.systemRed;
+      default:
+        return CupertinoColors.systemGrey;
+    }
+  }
+
+  String _formatTime(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final transactions = [
-      {
-        'title': 'Grocery Shopping',
-        'subtitle': 'Whole Foods Market',
-        'amount': '-\$85.20',
-        'time': 'Today',
-        'icon': CupertinoIcons.cart_fill,
-        'iconColor': Color(0xFF4CAF50),
-      },
-      {
-        'title': 'Transport',
-        'subtitle': 'Uber Ride',
-        'amount': '-\$12.50',
-        'time': 'Today',
-        'icon': CupertinoIcons.car_fill,
-        'iconColor': CupertinoColors.systemBlue,
-      },
-      {
-        'title': 'Entertainment',
-        'subtitle': 'Netflix',
-        'amount': '-\$15.99',
-        'time': 'Yesterday',
-        'icon': CupertinoIcons.gamecontroller_fill,
-        'iconColor': Color(0xFF4CAF50),
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -50,7 +103,9 @@ class RecentTransactions extends StatelessWidget {
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              onPressed: () {},
+              onPressed: onSeeAllPressed ?? () {
+                context.push(AppRoutes.transactions);
+              },
               child: Text(
                 'See All',
                 style: TextStyle(
@@ -63,14 +118,50 @@ class RecentTransactions extends StatelessWidget {
           ],
         ),
         SizedBox(height: ResponsiveConstants.spacing16),
-        ...transactions.map((transaction) => TransactionItem(
-          title: transaction['title'] as String,
-          subtitle: transaction['subtitle'] as String,
-          amount: transaction['amount'] as String,
-          time: transaction['time'] as String,
-          icon: transaction['icon'] as IconData,
-          iconColor: transaction['iconColor'] as Color,
-        )),
+        if (transactions.isEmpty)
+          Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: ResponsiveConstants.spacing24),
+              child: Column(
+                children: [
+                  Icon(
+                    CupertinoIcons.list_bullet,
+                    size: 48,
+                    color: CupertinoColors.systemGrey3,
+                  ),
+                  SizedBox(height: ResponsiveConstants.spacing8),
+                  Text(
+                    'No transactions yet',
+                    style: TextStyle(
+                      fontSize: ResponsiveConstants.fontSize14,
+                      color: CupertinoColors.systemGrey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveConstants.spacing4),
+                  Text(
+                    'Add your first transaction to get started',
+                    style: TextStyle(
+                      fontSize: ResponsiveConstants.fontSize12,
+                      color: CupertinoColors.systemGrey2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...transactions.take(3).map((transaction) => GestureDetector(
+            onTap: () => onTransactionTap?.call(transaction),
+            child: TransactionItem(
+              title: transaction.title,
+              subtitle: transaction.description ?? transaction.category,
+              amount: '${transaction.type == TransactionType.expense ? '-' : '+'}${CurrencyUtils.getCurrencySymbol(transaction.currency)}${transaction.amount.toStringAsFixed(2)}',
+              time: _formatTime(transaction.date),
+              icon: _getCategoryIcon(transaction.category),
+              iconColor: _getCategoryColor(transaction.category),
+            ),
+          )),
       ],
     );
   }

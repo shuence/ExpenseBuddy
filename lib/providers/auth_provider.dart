@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/remote/auth_service.dart';
 import '../models/user_model.dart';
 import '../services/user_preferences_service.dart';
@@ -196,6 +197,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       await _authService.signOut();
+      
+      // Clear all cached user data
+      final sharedPrefs = await SharedPreferences.getInstance();
+      await sharedPrefs.remove('user_data');
+      await sharedPrefs.remove('user_cache_timestamp');
+      
       emit(UnAuthenticated());
     } catch (e) {
       emit(AuthError(e.toString()));

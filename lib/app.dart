@@ -7,6 +7,7 @@ import 'core/constants/app_constants.dart';
 import 'router/app_router.dart';
 import 'services/theme_service.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/budget_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/onboarding_provider.dart';
@@ -45,6 +46,7 @@ class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> {
               create: (context) => OnboardingBloc(snapshot.data!),
             ),
             ChangeNotifierProvider(create: (context) => TransactionProvider()),
+            ChangeNotifierProvider(create: (context) => BudgetProvider()),
             ChangeNotifierProvider(create: (context) => NavigationProvider()),
           ],
           child: ValueListenableBuilder<bool>(

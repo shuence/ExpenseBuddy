@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../../models/transaction_model.dart';
 import 'package:intl/intl.dart';
+import '../../../../utils/currency_utils.dart';
 
 class TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
@@ -151,24 +152,7 @@ class TransactionItem extends StatelessWidget {
 
   String _formatAmount() {
     final prefix = transaction.type == TransactionType.income ? '+' : '-';
-    String symbol = '\$';
-    
-    switch (transaction.currency.toUpperCase()) {
-      case 'EUR':
-        symbol = '€';
-        break;
-      case 'GBP':
-        symbol = '£';
-        break;
-      case 'JPY':
-        symbol = '¥';
-        break;
-      case 'INR':
-        symbol = '₹';
-        break;
-      default:
-        symbol = '\$';
-    }
+    final symbol = CurrencyUtils.getCurrencySymbol(transaction.currency);
     
     return '$prefix$symbol${transaction.amount.toStringAsFixed(2)}';
   }

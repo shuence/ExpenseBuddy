@@ -1,14 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/user_model.dart';
 import '../../../services/user_service.dart';
+import '../../../services/user_preferences_service.dart';
+import '../../../providers/transaction_provider.dart';
+import '../../../providers/budget_provider.dart';
 import '../../../router/routes.dart';
 import '../../widgets/greeting_section.dart';
 import '../../widgets/balance_card.dart';
 import '../../widgets/overview_stats.dart';
 import '../../widgets/recent_transactions.dart';
+import '../transactions/transaction_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
   final UserService _userService = UserService();
+  final UserPreferencesService _userPreferencesService = UserPreferencesService();
+  String _userCurrency = 'USD'; // Default currency
 
   @override
   void initState() {
@@ -31,11 +38,34 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     try {
       final user = await _userService.getCurrentUser();
+      String userCurrency = 'USD'; // Default
+      
+      if (user != null) {
+        try {
+          userCurrency = await _userPreferencesService.getUserDefaultCurrency();
+        } catch (e) {
+          print('Error loading user currency: $e');
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _currentUser = user;
+          _userCurrency = userCurrency;
           _isLoading = false;
         });
+        
+        // Load transactions and budgets for this user
+        if (user != null && mounted) {
+          final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+          final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+          
+          // Load data in parallel
+          await Future.wait([
+            transactionProvider.loadTransactions(user.uid),
+            budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
+          ]);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -58,38 +88,80 @@ class _HomeScreenState extends State<HomeScreen> {
             horizontal: ResponsiveConstants.spacing16,
             vertical: ResponsiveConstants.spacing12,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Greeting Section
-              GreetingSection(
-                currentUser: _currentUser,
-                isLoading: _isLoading,
-                userService: _userService,
-              ),
+          child: Consumer<TransactionProvider>(
+            builder: (context, transactionProvider, child) {
+              // Calculate financial stats from transactions
+              final totalIncome = transactionProvider.getTotalIncome(_userCurrency);
+              final totalExpenses = transactionProvider.getTotalExpenses(_userCurrency);
+              final balance = transactionProvider.getBalance(_userCurrency);
+              final savings = totalIncome - totalExpenses; // This could be more sophisticated
               
-              SizedBox(height: ResponsiveConstants.spacing20),
+              // Get recent transactions (limit to 3)
+              final recentTransactions = transactionProvider.transactions.take(3).toList();
               
-              // Total Balance Card
-              const BalanceCard(balance: '\$12,458.90'),
-              
-              SizedBox(height: ResponsiveConstants.spacing20),
-              
-              // Overview Stats (Income, Expenses, Savings)
-              const OverviewStats(),
-              
-              SizedBox(height: ResponsiveConstants.spacing24),
-              
-              // Navigation Buttons Section
-              _buildNavigationButtons(context),
-              
-              SizedBox(height: ResponsiveConstants.spacing24),
-              
-              // Recent Transactions Section
-              const RecentTransactions(),
-              
-              SizedBox(height: ResponsiveConstants.spacing80), // Bottom padding for nav bar
-            ],
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Greeting Section
+                  GreetingSection(
+                    currentUser: _currentUser,
+                    isLoading: _isLoading,
+                    userService: _userService,
+                  ),
+                  
+                  SizedBox(height: ResponsiveConstants.spacing20),
+                  
+                  // Total Balance Card
+                  BalanceCard(
+                    balance: balance,
+                    currency: _userCurrency,
+                  ),
+                  
+                  SizedBox(height: ResponsiveConstants.spacing20),
+                  
+                  // Overview Stats (Income, Expenses, Savings)
+                  OverviewStats(
+                    income: totalIncome,
+                    expenses: totalExpenses,
+                    savings: savings,
+                    currency: _userCurrency,
+                  ),
+                  
+                  SizedBox(height: ResponsiveConstants.spacing24),
+                  
+                  // Navigation Buttons Section
+                  _buildNavigationButtons(context),
+                  
+                  SizedBox(height: ResponsiveConstants.spacing24),
+                  
+                  // Recent Transactions Section
+                  if (transactionProvider.isLoading)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: ResponsiveConstants.spacing24),
+                        child: const CupertinoActivityIndicator(),
+                      ),
+                    )
+                  else
+                    RecentTransactions(
+                      transactions: recentTransactions,
+                      onSeeAllPressed: () {
+                        context.push(AppRoutes.transactions);
+                      },
+                      onTransactionTap: (transaction) {
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => TransactionDetailsScreen(transaction: transaction),
+                          ),
+                        );
+                      },
+                    ),
+                  
+                  SizedBox(height: ResponsiveConstants.spacing80), // Bottom padding for nav bar
+                ],
+              );
+            },
           ),
         ),
       ),

@@ -3,13 +3,16 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/responsive_constants.dart';
 import '../../models/budget_model.dart';
 import 'circular_progress_indicator.dart';
+import 'currency_icon.dart';
 
 class BudgetSummaryCard extends StatelessWidget {
   final BudgetSummary budgetSummary;
+  final String currency;
 
   const BudgetSummaryCard({
     super.key,
     required this.budgetSummary,
+    this.currency = 'USD',
   });
 
   @override
@@ -131,13 +134,22 @@ class BudgetSummaryCard extends StatelessWidget {
           
           SizedBox(height: ResponsiveConstants.spacing8),
           
-          Text(
-            '\$${budgetSummary.totalSpent.toStringAsFixed(0)} / \$${budgetSummary.totalBudget.toStringAsFixed(0)}',
-            style: TextStyle(
-              fontSize: amountFontSize,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
-            ),
+          Row(
+                                    children: [
+                          CurrencyIcon(
+                            currencyCode: currency,
+                            size: amountFontSize * 0.8,
+                          ),
+              SizedBox(width: ResponsiveConstants.spacing4),
+              Text(
+                '${budgetSummary.totalSpent.toStringAsFixed(0)} / ${budgetSummary.totalBudget.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: amountFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                ),
+              ),
+            ],
           ),
           
           SizedBox(height: ResponsiveConstants.spacing6),

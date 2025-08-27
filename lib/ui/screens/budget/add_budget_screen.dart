@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/budget_model.dart';
-import '../../../services/budget_service.dart';
+import '../../../services/user_service.dart';
+import '../../../providers/budget_provider.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   const AddBudgetScreen({super.key});
@@ -12,9 +14,7 @@ class AddBudgetScreen extends StatefulWidget {
 }
 
 class _AddBudgetScreenState extends State<AddBudgetScreen> {
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  final BudgetService _budgetService = BudgetService();
   
   String _selectedCategory = 'Food & Dining';
   String _selectedIcon = '🍽️';
@@ -38,14 +38,13 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _amountController.dispose();
     super.dispose();
   }
 
   Future<void> _saveBudget() async {
-    if (_nameController.text.isEmpty || _amountController.text.isEmpty) {
-      _showErrorDialog('Please fill in all required fields');
+    if (_amountController.text.isEmpty) {
+      _showErrorDialog('Please enter a budget amount');
       return;
     }
 
@@ -60,6 +59,15 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     });
 
     try {
+      // Get current user ID
+      final userService = UserService();
+      final currentUser = await userService.getCurrentUser();
+      
+      if (currentUser == null) {
+        _showErrorDialog('User not found. Please log in again.');
+        return;
+      }
+
       final budget = BudgetModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _selectedCategory,
@@ -67,12 +75,16 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         allocatedAmount: amount,
         spentAmount: 0.0,
         periodType: _selectedPeriod.toLowerCase(),
-        startDate: DateTime.now(),
+        startDate: _getStartDate(),
         endDate: _getEndDate(),
         color: '#2ECC71',
+        userId: currentUser.uid,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
-      await _budgetService.createBudget(budget);
+      final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+      await budgetProvider.addBudget(budget);
       
       if (mounted) {
         Navigator.of(context).pop(true); // Return true to indicate success
@@ -94,11 +106,31 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     final now = DateTime.now();
     switch (_selectedPeriod.toLowerCase()) {
       case 'weekly':
-        return now.add(const Duration(days: 7));
+        // End of current week (Sunday)
+        final daysUntilSunday = 7 - now.weekday;
+        return DateTime(now.year, now.month, now.day + daysUntilSunday, 23, 59, 59);
       case 'yearly':
-        return DateTime(now.year + 1, now.month, now.day);
+        // End of current year
+        return DateTime(now.year, 12, 31, 23, 59, 59);
       default: // monthly
-        return DateTime(now.year, now.month + 1, now.day);
+        // End of current month
+        return DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    }
+  }
+
+  DateTime _getStartDate() {
+    final now = DateTime.now();
+    switch (_selectedPeriod.toLowerCase()) {
+      case 'weekly':
+        // Start of current week (Monday)
+        final daysSinceMonday = now.weekday - 1;
+        return DateTime(now.year, now.month, now.day - daysSinceMonday);
+      case 'yearly':
+        // Start of current year
+        return DateTime(now.year, 1, 1);
+      default: // monthly
+        // Start of current month
+        return DateTime(now.year, now.month, 1);
     }
   }
 
@@ -381,6 +413,48 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                     ],
                   ),
                 ),
+                
+                SizedBox(height: ResponsiveConstants.spacing40),
+                
+                // Save Button at Bottom
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  child: CupertinoButton(
+                    onPressed: _isLoading ? null : _saveBudget,
+                    color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                    borderRadius: BorderRadius.circular(10),
+                    child: _isLoading
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const CupertinoActivityIndicator(
+                                radius: 10,
+                                color: CupertinoColors.white,
+                              ),
+                              SizedBox(width: ResponsiveConstants.spacing8),
+                              Text(
+                                'Saving...',
+                                style: TextStyle(
+                                  fontSize: ResponsiveConstants.fontSize14,
+                                  fontWeight: FontWeight.w600,
+                                  color: CupertinoColors.white,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Save Budget',
+                            style: TextStyle(
+                              fontSize: ResponsiveConstants.fontSize14,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
+                          ),
+                  ),
+                ),
+                
+                SizedBox(height: ResponsiveConstants.spacing20),
               ],
             ),
           ),

@@ -2,15 +2,18 @@ import 'package:flutter/cupertino.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/responsive_constants.dart';
 import '../../models/budget_model.dart';
+import 'currency_icon.dart';
 
 class BudgetCategoryItem extends StatelessWidget {
   final BudgetModel budget;
   final VoidCallback? onTap;
+  final String currency;
 
   const BudgetCategoryItem({
     super.key,
     required this.budget,
     this.onTap,
+    this.currency = 'USD',
   });
 
   @override
@@ -139,13 +142,22 @@ class BudgetCategoryItem extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '\$${budget.spentAmount.toStringAsFixed(0)} / \$${budget.allocatedAmount.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: ResponsiveConstants.fontSize12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
-                      ),
+                                          Row(
+                        children: [
+                          CurrencyIcon(
+                            currencyCode: currency,
+                            size: 12,
+                          ),
+                        SizedBox(width: ResponsiveConstants.spacing4),
+                        Text(
+                          '${budget.spentAmount.toStringAsFixed(0)} / ${budget.allocatedAmount.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: ResponsiveConstants.fontSize12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       '${budget.spentPercentage.round()}%',

@@ -1,9 +1,14 @@
+import 'package:expensebuddy/router/routes.dart';
+import 'package:expensebuddy/services/user_service.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/transaction_model.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../providers/budget_provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../services/user_preferences_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -17,11 +22,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final UserPreferencesService _userPreferencesService = UserPreferencesService();
 
   String _selectedCategory = AppConstants.expenseCategories.first;
   String _selectedCurrency = AppConstants.currencies.first;
+  String _userDefaultCurrency = AppConstants.currencies.first;
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
+  bool _isLoadingCurrency = true;
+  bool _showAmountError = false;
+  bool _showTitleError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDefaultCurrency();
+  }
+
+  Future<void> _loadUserDefaultCurrency() async {
+    try {
+      final defaultCurrency = await _userPreferencesService.getUserDefaultCurrency();
+      if (mounted) {
+        setState(() {
+          _selectedCurrency = defaultCurrency;
+          _userDefaultCurrency = defaultCurrency;
+          _isLoadingCurrency = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCurrency = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -141,19 +176,47 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                 ),
               ),
-              Expanded(
-                child: CupertinoPicker(
-                  itemExtent: 40,
-                  onSelectedItemChanged: (int index) {
-                    setState(() {
-                      _selectedCurrency = AppConstants.currencies[index];
-                    });
-                  },
-                  children: AppConstants.currencies
-                      .map((currency) => Center(child: Text(currency)))
-                      .toList(),
-                ),
-              ),
+                             Expanded(
+                 child: CupertinoPicker(
+                   itemExtent: 40,
+                   scrollController: FixedExtentScrollController(
+                     initialItem: AppConstants.currencies.indexOf(_selectedCurrency),
+                   ),
+                   onSelectedItemChanged: (int index) {
+                     setState(() {
+                       _selectedCurrency = AppConstants.currencies[index];
+                     });
+                   },
+                   children: AppConstants.currencies.map((currency) => 
+                     Center(
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Text(currency),
+                           if (currency == _userDefaultCurrency) ...[
+                             const SizedBox(width: 8),
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                               decoration: BoxDecoration(
+                                 color: const Color(0xFF2ECC71).withOpacity(0.1),
+                                 borderRadius: BorderRadius.circular(4),
+                               ),
+                               child: Text(
+                                 'Default',
+                                 style: TextStyle(
+                                   fontSize: 10,
+                                   color: const Color(0xFF2ECC71),
+                                   fontWeight: FontWeight.w500,
+                                 ),
+                               ),
+                             ),
+                           ],
+                         ],
+                       ),
+                     ),
+                   ).toList(),
+                 ),
+               ),
             ],
           ),
         ),
@@ -161,28 +224,175 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  void _saveTransaction() {
+  void _saveTransaction() async {
+    // Reset error states
+    setState(() {
+      _showTitleError = false;
+      _showAmountError = false;
+    });
+
+    // Validate title is not empty
+    if (_titleController.text.trim().isEmpty) {
+      setState(() {
+        _showTitleError = true;
+      });
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Title Required'),
+          content: const Text('Please enter a title for the transaction.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Validate amount is not empty and is a valid number
+    if (_amountController.text.trim().isEmpty) {
+      setState(() {
+        _showAmountError = true;
+      });
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Amount Required'),
+          content: const Text('Please enter an amount for the transaction.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Validate amount is a valid number
+    double? amount;
+    try {
+      amount = double.parse(_amountController.text.trim());
+      if (amount <= 0) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Invalid Amount'),
+            content: const Text('Please enter a valid amount greater than 0.'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Invalid Amount'),
+          content: const Text('Please enter a valid number for the amount.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
+      // Get current user ID
+      String? userId;
+      try {
+        final userService = UserService();
+        final currentUser = await userService.getCurrentUser();
+        userId = currentUser?.uid;
+      } catch (e) {
+        print('Error getting user: $e');
+      }
+      
+      if (userId == null) {
+        // Show error if user not found
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: const Text('Unable to save transaction. Please try again.'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
       final transaction = TransactionModel(
         id: _generateId(),
         title: _titleController.text.trim(),
-        amount: double.parse(_amountController.text),
+        amount: amount,
         category: _selectedCategory,
         date: _selectedDate,
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
-        userId: 'demo_user',
+        userId: userId,
         currency: _selectedCurrency,
         type: _selectedType,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      context.read<TransactionProvider>().addTransaction(transaction);
-
-      if (mounted) {
-        Navigator.of(context).pop();
+      try {
+        await context.read<TransactionProvider>().addTransaction(transaction);
+        
+        // Refresh budgets if it's an expense (to update spent amounts)
+        if (transaction.type == TransactionType.expense && mounted) {
+          final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+          // Refresh budgets for the current month and the transaction month
+          final currentMonth = DateTime.now();
+          final transactionMonth = transaction.date;
+          
+          // Refresh both months if they're different
+          await budgetProvider.refreshBudgetsForMonth(userId, currentMonth);
+          if (currentMonth.month != transactionMonth.month || currentMonth.year != transactionMonth.year) {
+            await budgetProvider.refreshBudgetsForMonth(userId, transactionMonth);
+          }
+        }
+        
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to save transaction: $e'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -204,7 +414,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         border: null,
         leading: CupertinoNavigationBarBackButton(
           color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () =>context.push(AppRoutes.transactions),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -358,31 +568,62 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _selectedCurrency,
-                    style: TextStyle(
-                      fontSize: 24,
-                      color: typeColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                                 children: [
+                   _isLoadingCurrency 
+                       ? CupertinoActivityIndicator(radius: 12)
+                       : Text(
+                           _selectedCurrency,
+                           style: TextStyle(
+                             fontSize: 24,
+                             color: typeColor,
+                             fontWeight: FontWeight.w600,
+                           ),
+                         ),
                   
                   const SizedBox(width: 8),
                   
                   Flexible(
-                    child: CupertinoTextField(
-                      controller: _amountController,
-                      placeholder: '0.00',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: typeColor,
-                      ),
-                      decoration: const BoxDecoration(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CupertinoTextField(
+                          controller: _amountController,
+                          placeholder: '0.00',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: typeColor,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _showAmountError
+                                  ? CupertinoColors.systemRed
+                                  : CupertinoColors.systemGrey5,
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          onChanged: (value) {
+                            setState(() {
+                              _showAmountError = false;
+                            });
+                          },
+                        ),
+                        if (_showAmountError)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 16),
+                            child: Text(
+                              'Amount is required',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemRed,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -413,12 +654,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         _buildDetailCard(
           context,
           icon: CupertinoIcons.textformat,
-          title: 'Title',
-          child: CupertinoTextField(
-            controller: _titleController,
-            placeholder: 'Enter transaction title',
-            decoration: const BoxDecoration(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          title: 'Title *',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CupertinoTextField(
+                controller: _titleController,
+                placeholder: 'Enter transaction title',
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _showTitleError
+                        ? CupertinoColors.systemRed
+                        : CupertinoColors.systemGrey5,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                onChanged: (value) {
+                  setState(() {
+                    _showTitleError = false;
+                  });
+                },
+              ),
+              if (_showTitleError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 16),
+                  child: Text(
+                    'Title is required',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemRed,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         
@@ -501,26 +771,39 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 title: 'Currency',
                 child: GestureDetector(
                   onTap: _showCurrencyPicker,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _selectedCurrency,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
-                          ),
-                        ),
-                        Icon(
-                          CupertinoIcons.chevron_right,
-                          color: CupertinoColors.systemGrey,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
+                                       child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                       child: Row(
+                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                         children: [
+                           Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Text(
+                                 _selectedCurrency,
+                                 style: TextStyle(
+                                   fontSize: 16,
+                                   color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                                 ),
+                               ),
+                               if (_selectedCurrency == _userDefaultCurrency)
+                                 Text(
+                                   'Default',
+                                   style: TextStyle(
+                                     fontSize: 12,
+                                     color: CupertinoColors.systemGrey,
+                                   ),
+                                 ),
+                             ],
+                           ),
+                           Icon(
+                             CupertinoIcons.chevron_right,
+                             color: CupertinoColors.systemGrey,
+                             size: 18,
+                           ),
+                         ],
+                       ),
+                     ),
                 ),
               ),
             ),

@@ -2,12 +2,14 @@ import 'package:flutter/cupertino.dart';
 import '../../core/constants/responsive_constants.dart';
 
 class BalanceCard extends StatelessWidget {
-  final String balance;
+  final double balance;
+  final String currency;
   final String subtitle;
 
   const BalanceCard({
     super.key,
     required this.balance,
+    this.currency = 'USD',
     this.subtitle = 'Updated just now',
   });
 
@@ -47,7 +49,7 @@ class BalanceCard extends StatelessWidget {
           ),
           SizedBox(height: ResponsiveConstants.spacing8),
           Text(
-            balance,
+            '${currency == 'USD' ? '\$' : currency} ${balance.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,

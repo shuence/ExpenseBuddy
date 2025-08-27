@@ -207,4 +207,20 @@ class UserPreferencesService {
            preferences.country.isNotEmpty &&
            preferences.defaultCurrency.isNotEmpty;
   }
+
+  // Get user default currency (simple query)
+  Future<String> getUserDefaultCurrency({String? userId}) async {
+    try {
+      final String userIdToUse = userId ?? currentUserId ?? '';
+      if (userIdToUse.isEmpty) {
+        return 'USD'; // Default fallback
+      }
+
+      final preferences = await getUserPreferences(userIdToUse);
+      return preferences?.defaultCurrency ?? 'USD';
+    } catch (e) {
+      // Return default currency if anything fails
+      return 'USD';
+    }
+  }
 }

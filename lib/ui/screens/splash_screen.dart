@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/responsive_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../router/routes.dart';
 import '../../../services/shared_prefs_service.dart';
-import '../../../services/user_preferences_service.dart';
+import '../../../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -44,50 +45,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Navigate based on user state after animation completes
+    // Trigger authentication check after animation completes
     Future.delayed(const Duration(milliseconds: 3000), () async {
       if (mounted) {
-        try {
-          // Add a small delay to ensure router is fully initialized
-          await Future.delayed(const Duration(milliseconds: 100));
-          try {
-            final sp = await SharedPrefsService.getInstance();
-            final isFirst = sp.isFirstLaunch();
-            final user = sp.getUser();
-            if (!mounted) return;
-            
-            if (user != null) {
-              // User exists, check if they have completed preferences setup
-              try {
-                final preferencesService = UserPreferencesService();
-                final preferencesExist = await preferencesService.preferencesExist(user.uid);
-                
-                if (preferencesExist) {
-                  // User has completed preferences setup, go to home
-                  context.go(AppRoutes.home);
-                } else {
-                  // User exists but hasn't completed preferences setup
-                  context.go(AppRoutes.userPreferences);
-                }
-              } catch (e) {
-                debugPrint('Error checking user preferences: $e');
-                // If preferences check fails, assume they need to set them up
-                context.go(AppRoutes.userPreferences);
-              }
-            } else if (isFirst) {
-              context.go(AppRoutes.onboardingPage1);
-            } else {
-              context.go(AppRoutes.login);
-            }
-          } catch (e) {
-            if (!mounted) return;
-            context.go(AppRoutes.onboardingPage1);
-          }
-        } catch (e) {
-          debugPrint('Navigation failed, using emergency navigation: $e');
-          // Fallback
-          if (mounted) context.go(AppRoutes.onboardingPage1);
-        }
+        context.read<AuthBloc>().add(AuthCheckRequested());
       }
     });
   }
@@ -98,88 +59,126 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  Future<void> _navigateBasedOnState(AuthState state) async {
+    if (!mounted) return;
+    
+    try {
+      if (state is Authenticated) {
+        // User is authenticated and has preferences, go to home
+        context.go(AppRoutes.home);
+      } else if (state is AuthenticatedButNoPreferences) {
+        // User is authenticated but needs to set preferences
+        context.go(AppRoutes.userPreferences);
+      } else if (state is UnAuthenticated) {
+        // User is not authenticated, check if first launch
+        final sp = await SharedPrefsService.getInstance();
+        final isFirst = sp.isFirstLaunch();
+        
+        if (isFirst) {
+          context.go(AppRoutes.onboardingPage1);
+        } else {
+          context.go(AppRoutes.login);
+        }
+      } else if (state is AuthError) {
+        // Auth error, go to login
+        debugPrint('Auth error: ${state.message}');
+        context.go(AppRoutes.login);
+      }
+      // For AuthInitial and AuthLoading, stay on splash screen
+    } catch (e) {
+      debugPrint('Navigation error: $e');
+      // Fallback navigation
+      if (mounted) context.go(AppRoutes.login);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: AppTheme.getBackgroundColor(Brightness.light),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveConstants.spacing24,
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Main App Icon with Animation
-                AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Image.asset(
-                          'assets/images/splash_screen.png',
-                          width: ResponsiveConstants.containerHeight280,
-                          height: ResponsiveConstants.containerHeight312,
-                          fit: BoxFit.contain,
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        _navigateBasedOnState(state);
+      },
+      child: CupertinoPageScaffold(
+        backgroundColor: AppTheme.getBackgroundColor(Brightness.light),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveConstants.spacing24,
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Main App Icon with Animation
+                  AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Image.asset(
+                            'assets/images/splash_screen.png',
+                            width: ResponsiveConstants.containerHeight280,
+                            height: ResponsiveConstants.containerHeight312,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: ResponsiveConstants.spacing32),
+
+                  // App Name
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Text(
+                      AppConstants.appName,
+                      style: TextStyle(
+                        fontSize: ResponsiveConstants.fontSize32,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextPrimaryColor(Brightness.light),
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  SizedBox(height: ResponsiveConstants.spacing16),
+
+                  // Tagline
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveConstants.spacing40,
+                      ),
+                      child: Text(
+                        'Smart expense tracking for your financial freedom',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: ResponsiveConstants.fontSize16,
+                          fontWeight: FontWeight.normal,
+                          color: AppTheme.getTextSecondaryColor(Brightness.light),
+                          height: 1.4,
                         ),
                       ),
-                    );
-                  },
-                ),
-
-                SizedBox(height: ResponsiveConstants.spacing32),
-
-                // App Name
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Text(
-                    AppConstants.appName,
-                    style: TextStyle(
-                      fontSize: ResponsiveConstants.fontSize32,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextPrimaryColor(Brightness.light),
-                      letterSpacing: -0.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                SizedBox(height: ResponsiveConstants.spacing16),
-
-                // Tagline
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: ResponsiveConstants.spacing40,
-                    ),
-                    child: Text(
-                      'Smart expense tracking for your financial freedom',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: ResponsiveConstants.fontSize16,
-                        fontWeight: FontWeight.normal,
-                        color: AppTheme.getTextSecondaryColor(Brightness.light),
-                        height: 1.4,
-                      ),
                     ),
                   ),
-                ),
 
-                SizedBox(height: ResponsiveConstants.spacing48),
+                  SizedBox(height: ResponsiveConstants.spacing48),
 
-                // Loading Indicator
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: CupertinoActivityIndicator(
-                    color: AppTheme.getPrimaryColor(Brightness.light),
+                  // Loading Indicator
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: CupertinoActivityIndicator(
+                      color: AppTheme.getPrimaryColor(Brightness.light),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

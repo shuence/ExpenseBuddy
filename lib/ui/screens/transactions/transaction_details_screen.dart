@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/transaction_model.dart';
+import '../../../utils/currency_utils.dart';
 import 'edit_transaction_screen.dart';
 
 class TransactionDetailsScreen extends StatelessWidget {
@@ -128,7 +129,7 @@ class TransactionDetailsScreen extends StatelessWidget {
                     
                     // Amount
                     Text(
-                      '${isIncome ? '+' : '-'}${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
+                      '${isIncome ? '+' : '-'}${CurrencyUtils.getCurrencySymbol(transaction.currency)}${transaction.amount.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: ResponsiveConstants.fontSize28,
                         fontWeight: FontWeight.bold,

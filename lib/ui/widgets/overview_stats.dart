@@ -1,12 +1,26 @@
 import 'package:flutter/cupertino.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/responsive_constants.dart';
+import '../../utils/currency_utils.dart';
 
 class OverviewStats extends StatelessWidget {
-  const OverviewStats({super.key});
+  final double income;
+  final double expenses;
+  final double savings;
+  final String currency;
+
+  const OverviewStats({
+    super.key,
+    required this.income,
+    required this.expenses,
+    required this.savings,
+    this.currency = 'USD',
+  });
 
   @override
   Widget build(BuildContext context) {
+    final currencySymbol = CurrencyUtils.getCurrencySymbol(currency);
+    
     return Row(
       children: [
         Expanded(
@@ -14,7 +28,7 @@ class OverviewStats extends StatelessWidget {
             icon: CupertinoIcons.arrow_up_right,
             iconColor: Color(0xFF2ECC71),
             title: 'Income',
-            amount: '\$3,240',
+            amount: '$currencySymbol${income.toStringAsFixed(0)}',
           ),
         ),
         SizedBox(width: ResponsiveConstants.spacing12),
@@ -23,7 +37,7 @@ class OverviewStats extends StatelessWidget {
             icon: CupertinoIcons.arrow_down_left,
             iconColor: CupertinoColors.systemRed,
             title: 'Expenses',
-            amount: '\$1,865',
+            amount: '$currencySymbol${expenses.toStringAsFixed(0)}',
           ),
         ),
         SizedBox(width: ResponsiveConstants.spacing12),
@@ -32,7 +46,7 @@ class OverviewStats extends StatelessWidget {
             icon: CupertinoIcons.square_stack_3d_up,
             iconColor: Color(0xFF4CAF50),
             title: 'Savings',
-            amount: '\$1,375',
+            amount: '$currencySymbol${savings.toStringAsFixed(0)}',
           ),
         ),
       ],
