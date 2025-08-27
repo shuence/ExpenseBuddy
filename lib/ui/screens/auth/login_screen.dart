@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required String imagePath,
     required String text,
     required VoidCallback onPressed,
+    required bool isLoading,
   }) {
     return Container(
       width: double.infinity,
@@ -56,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
       child: CupertinoButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         padding: EdgeInsets.symmetric(
           vertical: ResponsiveConstants.spacing16,
           horizontal: ResponsiveConstants.spacing16,
@@ -66,6 +67,12 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (isLoading)
+              const CupertinoActivityIndicator(
+                color: CupertinoColors.systemGrey,
+                radius: 10,
+              )
+            else
             Image.asset(
               imagePath,
               width: ResponsiveConstants.iconSize20,
@@ -74,10 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(width: ResponsiveConstants.spacing8),
             Text(
-              text,
+              isLoading ? 'Signing in...' : text,
               style: TextStyle(
                 fontSize: ResponsiveConstants.fontSize14,
-                color: CupertinoColors.black,
+                color: isLoading ? CupertinoColors.systemGrey : CupertinoColors.black,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -225,7 +232,11 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: ResponsiveConstants.spacing32),
 
               // Social Login Buttons
-              Column(
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  final isLoading = state is AuthLoading;
+                  
+                  return Column(
                 children: [
                   _buildSocialButton(
                     imagePath: 'assets/icons/google.png',
@@ -233,6 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       context.read<AuthBloc>().add(GoogleSignInRequested());
                     },
+                        isLoading: isLoading,
                   ),
                   SizedBox(height: ResponsiveConstants.spacing20),
                   _buildSocialButton(
@@ -241,8 +253,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       context.read<AuthBloc>().add(AppleSignInRequested());
                     },
+                        isLoading: isLoading,
                   ),
                 ],
+                  );
+                },
               ),
 
               SizedBox(height: ResponsiveConstants.spacing16),

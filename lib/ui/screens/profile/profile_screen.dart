@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../router/routes.dart';
 import '../../../services/user_preferences_service.dart';
@@ -13,6 +14,9 @@ import 'widgets/settings_section.dart';
 import 'widgets/settings_item.dart';
 import 'widgets/sign_out_button.dart';
 import 'widgets/version_info.dart';
+import '../settings/sync_settings_screen.dart';
+import '../../../providers/transaction_provider.dart';
+import '../../../ui/widgets/sync_status_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -197,24 +201,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 context.push(AppRoutes.notificationsSettings);
                               },
                             ),
-                            SettingsItem(
-                              icon: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.activeGreen,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  CupertinoIcons.cloud,
-                                  color: CupertinoColors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              title: 'Backup & Sync',
-                              subtitle: 'Last backup: Today 2:30 PM',
-                              onTap: () {
-                                context.push(AppRoutes.backupSyncSettings);
+                            Consumer<TransactionProvider>(
+                              builder: (context, transactionProvider, child) {
+                                final unsyncedCount = transactionProvider.unsyncedTransactions.length;
+                                final failedCount = transactionProvider.failedTransactions.length;
+                                
+                                String subtitle = 'Manage offline sync and data backup';
+                                if (unsyncedCount > 0 || failedCount > 0) {
+                                  subtitle = '$unsyncedCount pending, $failedCount failed';
+                                }
+                                
+                                return SettingsItem(
+                                  icon: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.activeBlue,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      CupertinoIcons.arrow_clockwise,
+                                      color: CupertinoColors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  title: 'Backup & Sync',
+                                  subtitle: subtitle,
+                                  trailing: (unsyncedCount > 0 || failedCount > 0)
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: failedCount > 0 
+                                                ? CupertinoColors.systemRed 
+                                                : CupertinoColors.systemOrange,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            '${unsyncedCount + failedCount}',
+                                            style: const TextStyle(
+                                              color: CupertinoColors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      CupertinoPageRoute(
+                                        builder: (context) => const SyncSettingsScreen(),
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                             ),
                           ],

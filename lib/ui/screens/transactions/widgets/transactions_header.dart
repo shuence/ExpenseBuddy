@@ -1,24 +1,51 @@
 import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/responsive_constants.dart';
+import '../../../../core/constants/app_constants.dart';
 import 'transaction_menu.dart';
 
 class TransactionsHeader extends StatelessWidget {
   final String title;
   final VoidCallback? onSearchTap;
-  final VoidCallback? onFilterTap;
+  final TransactionFilter currentFilter;
+  final SortOption currentSort;
+  final Function(TransactionFilter)? onFilterChanged;
+  final Function(SortOption)? onSortChanged;
+  final Function(DateTime?, DateTime?)? onDateRangeChanged;
+  final Function(String?)? onCategoryFilterChanged;
+  final Function(double?, double?)? onAmountRangeChanged;
+  final Function(String)? onSearchChanged;
+  final String currency;
 
   const TransactionsHeader({
     super.key,
     this.title = 'Transactions',
     this.onSearchTap,
-    this.onFilterTap,
+    this.currentFilter = TransactionFilter.all,
+    this.currentSort = SortOption.dateDesc,
+    this.onFilterChanged,
+    this.onSortChanged,
+    this.onDateRangeChanged,
+    this.onCategoryFilterChanged,
+    this.onAmountRangeChanged,
+    this.onSearchChanged,
+    this.currency = 'USD',
   });
 
   void _onMenuPressed(BuildContext context) {
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => const TransactionMenu(),
+      builder: (context) => TransactionMenu(
+        currentFilter: currentFilter,
+        currentSort: currentSort,
+        onFilterChanged: onFilterChanged,
+        onSortChanged: onSortChanged,
+        onDateRangeChanged: onDateRangeChanged,
+        onCategoryFilterChanged: onCategoryFilterChanged,
+        onAmountRangeChanged: onAmountRangeChanged,
+        onSearchChanged: onSearchChanged,
+        currency: currency,
+      ),
     );
   }
 
@@ -26,9 +53,7 @@ class TransactionsHeader extends StatelessWidget {
     onSearchTap?.call();
   }
 
-  void _onFilterPressed() {
-    onFilterTap?.call();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -74,36 +99,6 @@ class TransactionsHeader extends StatelessWidget {
           // Action Buttons
           Row(
             children: [
-              // Filter Button
-              GestureDetector(
-                onTap: _onFilterPressed,
-                child: Container(
-                  width: ResponsiveConstants.containerHeight48,
-                  height: ResponsiveConstants.containerHeight48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.getSurfaceColor(brightness),
-                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius16),
-                    border: Border.all(
-                      color: AppTheme.getPrimaryColor(brightness).withOpacity(0.1),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.getPrimaryColor(brightness).withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    CupertinoIcons.slider_horizontal_3,
-                    color: AppTheme.getPrimaryColor(brightness),
-                    size: ResponsiveConstants.iconSize20,
-                  ),
-                ),
-              ),
-              
-              SizedBox(width: ResponsiveConstants.spacing12),
               
               // Search Button
               GestureDetector(

@@ -13,6 +13,8 @@ import '../../widgets/greeting_section.dart';
 import '../../widgets/balance_card.dart';
 import '../../widgets/overview_stats.dart';
 import '../../widgets/recent_transactions.dart';
+import '../../widgets/chart_widget.dart';
+import '../../widgets/home_header.dart';
 import '../transactions/transaction_details_screen.dart';
 import '../transactions/widgets/floating_add_button.dart';
 
@@ -132,8 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Greeting Section
-                        GreetingSection(
+                        // Home Header with Connectivity Status
+                        HomeHeader(
                           currentUser: _currentUser,
                           isLoading: _isLoading,
                           userService: _userService,
@@ -152,6 +154,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           expenses: totalExpenses,
                           savings: savings,
                           currency: _userCurrency,
+                        ),
+
+                        SizedBox(height: ResponsiveConstants.spacing20),
+
+                        // Weekly Spending Chart
+                        ChartWidget(
+                          currency: _userCurrency,
+                          transactions: transactionProvider.transactions,
+                          chartType: ChartType.bar,
                         ),
 
                         SizedBox(height: ResponsiveConstants.spacing24),

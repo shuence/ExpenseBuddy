@@ -1,6 +1,7 @@
 
 import 'package:expensebuddy/ui/screens/error/no_route_found_screen.dart';
 import 'package:expensebuddy/ui/screens/onboarding/user_preferences_screen.dart';
+import 'package:expensebuddy/ui/screens/profile/profile_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../ui/screens/splash_screen.dart';
 import '../ui/screens/onboarding/onboarding_screen.dart';
@@ -86,6 +87,10 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.addTransaction,

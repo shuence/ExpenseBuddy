@@ -64,3 +64,7 @@ class AppConstants {
     'INR',
   ];
 }
+
+// Shared enums for transaction filtering and sorting
+enum TransactionFilter { all, income, expenses, transfer }
+enum SortOption { dateDesc, dateAsc, amountDesc, amountAsc, titleAsc, titleDesc }

@@ -6,6 +6,12 @@ enum TransactionType {
   income,
 }
 
+enum SyncStatus {
+  synced,
+  pending,
+  failed,
+}
+
 class TransactionModel extends Equatable {
   final String id;
   final String title;
@@ -18,6 +24,11 @@ class TransactionModel extends Equatable {
   final TransactionType type;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Sync-related fields
+  final SyncStatus syncStatus;
+  final int syncAttempts;
+  final DateTime? lastSyncAttempt;
+  final String? syncError;
 
   const TransactionModel({
     required this.id,
@@ -31,6 +42,10 @@ class TransactionModel extends Equatable {
     required this.type,
     required this.createdAt,
     required this.updatedAt,
+    this.syncStatus = SyncStatus.pending,
+    this.syncAttempts = 0,
+    this.lastSyncAttempt,
+    this.syncError,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +64,15 @@ class TransactionModel extends Equatable {
       ),
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      syncStatus: SyncStatus.values.firstWhere(
+        (e) => e.toString() == 'SyncStatus.${json['syncStatus'] ?? 'pending'}',
+        orElse: () => SyncStatus.pending,
+      ),
+      syncAttempts: json['syncAttempts'] as int? ?? 0,
+      lastSyncAttempt: json['lastSyncAttempt'] != null 
+          ? _parseDateTime(json['lastSyncAttempt']) 
+          : null,
+      syncError: json['syncError'] as String?,
     );
   }
 
@@ -65,6 +89,10 @@ class TransactionModel extends Equatable {
       'type': type.toString().split('.').last,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'syncStatus': syncStatus.toString().split('.').last,
+      'syncAttempts': syncAttempts,
+      'lastSyncAttempt': lastSyncAttempt?.toIso8601String(),
+      'syncError': syncError,
     };
   }
 
@@ -80,6 +108,10 @@ class TransactionModel extends Equatable {
     TransactionType? type,
     DateTime? createdAt,
     DateTime? updatedAt,
+    SyncStatus? syncStatus,
+    int? syncAttempts,
+    DateTime? lastSyncAttempt,
+    String? syncError,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -93,6 +125,10 @@ class TransactionModel extends Equatable {
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      syncAttempts: syncAttempts ?? this.syncAttempts,
+      lastSyncAttempt: lastSyncAttempt ?? this.lastSyncAttempt,
+      syncError: syncError ?? this.syncError,
     );
   }
 
@@ -109,6 +145,10 @@ class TransactionModel extends Equatable {
     type,
     createdAt,
     updatedAt,
+    syncStatus,
+    syncAttempts,
+    lastSyncAttempt,
+    syncError,
   ];
 
   // Helper method to parse DateTime from various formats

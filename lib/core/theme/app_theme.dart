@@ -75,4 +75,8 @@ class AppTheme {
   static Color getTextSecondaryColor(Brightness brightness) {
     return brightness == Brightness.dark ? darkTextSecondary : lightTextSecondary;
   }
+
+  static Color getBorderColor(Brightness brightness) {
+    return brightness == Brightness.dark ? darkTextSecondary.withOpacity(0.3) : lightTextSecondary.withOpacity(0.3);
+  }
 }

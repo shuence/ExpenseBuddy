@@ -169,7 +169,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithGoogle();
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
-        emit(Authenticated(userModel));
+        // Check if user has preferences set
+        final preferencesService = UserPreferencesService();
+        final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
+        
+        if (preferencesExist) {
+          emit(Authenticated(userModel));
+        } else {
+          emit(AuthenticatedButNoPreferences(userModel));
+        }
       } else {
         emit(AuthError('Failed to get user data'));
       }
@@ -184,7 +192,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithApple();
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
-        emit(Authenticated(userModel));
+        // Check if user has preferences set
+        final preferencesService = UserPreferencesService();
+        final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
+        
+        if (preferencesExist) {
+          emit(Authenticated(userModel));
+        } else {
+          emit(AuthenticatedButNoPreferences(userModel));
+        }
       } else {
         emit(AuthError('Failed to get user data'));
       }

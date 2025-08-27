@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/navigation_provider.dart';
@@ -68,26 +69,60 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
   
   void _showExitWarning() {
-    // Show a cupertino-style alert dialog
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => CupertinoAlertDialog(
-        content: const Text('Press back again to exit ExpenseBuddy'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.of(context).pop(),
+    // Show an iOS-style tip notification at the bottom
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 100, // Position above the tab bar
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: CupertinoColors.systemGrey.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.info_circle,
+                  color: CupertinoColors.systemBlue,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Press back again to exit',
+                    style: TextStyle(
+                      color: CupertinoColors.label,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
     
+    overlay.insert(overlayEntry);
+    
     // Auto-dismiss after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
-      if (context.mounted && Navigator.canPop(context)) {
-        Navigator.of(context).pop();
-      }
+      overlayEntry.remove();
     });
   }
 

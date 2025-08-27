@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/responsive_constants.dart';
-
-enum TransactionFilter { all, income, expenses, transfer }
+import '../../../../core/constants/app_constants.dart';
 
 class TransactionFilterTabs extends StatelessWidget {
   final TransactionFilter selectedFilter;

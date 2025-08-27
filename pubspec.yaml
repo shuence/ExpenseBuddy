@@ -44,6 +44,15 @@ dependencies:
   shared_preferences: ^2.3.2
   flutter_local_notifications: ^18.0.1
   
+  # Charts
+  fl_chart: ^1.0.0
+
+  # Offline Sync
+  connectivity_plus: ^6.0.5
+  # workmanager: ^0.5.2  # Temporarily disabled due to build issues
+  # Using flutter_local_notifications for background sync instead
+  timezone: ^0.9.4
+
   # Device Preview
   device_preview: ^1.3.1
   

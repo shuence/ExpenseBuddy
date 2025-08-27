@@ -8,7 +8,7 @@ class FloatingAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 100,
+      bottom: 40,
       right: 20,
       child: GestureDetector(
         onTap: () {

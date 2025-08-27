@@ -1,10 +1,12 @@
 import 'package:expensebuddy/router/routes.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../models/transaction_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../services/user_service.dart';
 import '../../../services/user_preferences_service.dart';
@@ -13,15 +15,6 @@ import 'widgets/balance_card.dart';
 import 'widgets/transaction_filter_tabs.dart';
 import 'widgets/transaction_item.dart';
 import 'widgets/floating_add_button.dart';
-
-enum SortOption {
-  dateDesc,
-  dateAsc,
-  amountDesc,
-  amountAsc,
-  titleAsc,
-  titleDesc,
-}
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -40,7 +33,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   List<String> _searchSuggestions = [];
   bool _showSearchSuggestions = false;
   bool _showSearchBar = false;
-  
+
   // Advanced Filters
   DateTime? _startDate;
   DateTime? _endDate;
@@ -68,13 +61,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     try {
       final currentUser = await _userService.getCurrentUser();
       if (currentUser != null) {
-        final preferences = await _preferencesService.getUserPreferences(currentUser.uid);
+        final preferences = await _preferencesService.getUserPreferences(
+          currentUser.uid,
+        );
         setState(() {
           _userCurrency = preferences?.defaultCurrency ?? 'USD';
         });
       }
     } catch (e) {
-      print('Error loading user preferences: $e');
+      if (kDebugMode) {
+        print('Error loading user preferences: $e');
+      }
     }
   }
 
@@ -82,7 +79,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     try {
       final currentUser = await _userService.getCurrentUser();
       if (currentUser != null && mounted) {
-        final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+        final transactionProvider = Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        );
         await transactionProvider.loadTransactions(currentUser.uid);
       }
     } catch (e) {
@@ -90,9 +90,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
-  List<TransactionModel> _getFilteredTransactions(TransactionProvider provider) {
+  List<TransactionModel> _getFilteredTransactions(
+    TransactionProvider provider,
+  ) {
     List<TransactionModel> filtered;
-    
+
     switch (_selectedFilter) {
       case TransactionFilter.all:
         filtered = provider.transactions;
@@ -109,53 +111,62 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             .toList();
         break;
     }
-    
+
     // Apply search filter if query is not empty
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((transaction) {
         return transaction.title.toLowerCase().contains(_searchQuery) ||
-               transaction.category.toLowerCase().contains(_searchQuery) ||
-               (transaction.description?.toLowerCase().contains(_searchQuery) ?? false);
+            transaction.category.toLowerCase().contains(_searchQuery) ||
+            (transaction.description?.toLowerCase().contains(_searchQuery) ??
+                false);
       }).toList();
     }
-    
+
     // Apply date range filter
     if (_startDate != null) {
-      filtered = filtered.where((transaction) => 
-        transaction.date.isAfter(_startDate!.subtract(const Duration(days: 1)))
-      ).toList();
+      filtered = filtered
+          .where(
+            (transaction) => transaction.date.isAfter(
+              _startDate!.subtract(const Duration(days: 1)),
+            ),
+          )
+          .toList();
     }
-    
+
     if (_endDate != null) {
-      filtered = filtered.where((transaction) => 
-        transaction.date.isBefore(_endDate!.add(const Duration(days: 1)))
-      ).toList();
+      filtered = filtered
+          .where(
+            (transaction) => transaction.date.isBefore(
+              _endDate!.add(const Duration(days: 1)),
+            ),
+          )
+          .toList();
     }
-    
+
     // Apply amount range filter
     if (_minAmount != null) {
-      filtered = filtered.where((transaction) => 
-        transaction.amount >= _minAmount!
-      ).toList();
+      filtered = filtered
+          .where((transaction) => transaction.amount >= _minAmount!)
+          .toList();
     }
-    
+
     if (_maxAmount != null) {
-      filtered = filtered.where((transaction) => 
-        transaction.amount <= _maxAmount!
-      ).toList();
+      filtered = filtered
+          .where((transaction) => transaction.amount <= _maxAmount!)
+          .toList();
     }
-    
+
     // Apply category filter
     if (_selectedCategory != null) {
-      filtered = filtered.where((transaction) => 
-        transaction.category == _selectedCategory
-      ).toList();
+      filtered = filtered
+          .where((transaction) => transaction.category == _selectedCategory)
+          .toList();
     }
-    
+
     // Apply sorting
     switch (_sortOption) {
       case SortOption.dateDesc:
-    filtered.sort((a, b) => b.date.compareTo(a.date));
+        filtered.sort((a, b) => b.date.compareTo(a.date));
         break;
       case SortOption.dateAsc:
         filtered.sort((a, b) => a.date.compareTo(b.date));
@@ -173,7 +184,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         filtered.sort((a, b) => b.title.compareTo(a.title));
         break;
     }
-    
+
     return filtered;
   }
 
@@ -192,6 +203,32 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   void _onFilterChanged(TransactionFilter filter) {
     setState(() {
       _selectedFilter = filter;
+    });
+  }
+
+  void _onSortChanged(SortOption sort) {
+    setState(() {
+      _sortOption = sort;
+    });
+  }
+
+  void _onDateRangeChanged(DateTime? start, DateTime? end) {
+    setState(() {
+      _startDate = start;
+      _endDate = end;
+    });
+  }
+
+  void _onCategoryFilterChanged(String? category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
+
+  void _onAmountRangeChanged(double? min, double? max) {
+    setState(() {
+      _minAmount = min;
+      _maxAmount = max;
     });
   }
 
@@ -218,32 +255,36 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       return;
     }
 
-    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+    final transactionProvider = Provider.of<TransactionProvider>(
+      context,
+      listen: false,
+    );
     final allTransactions = transactionProvider.transactions;
-    
+
     final suggestions = <String>{};
-    
+
     // Add transaction titles
     for (final transaction in allTransactions) {
       if (transaction.title.toLowerCase().contains(_searchQuery)) {
         suggestions.add(transaction.title);
       }
     }
-    
+
     // Add categories
     for (final transaction in allTransactions) {
       if (transaction.category.toLowerCase().contains(_searchQuery)) {
         suggestions.add(transaction.category);
       }
     }
-    
+
     // Add descriptions
     for (final transaction in allTransactions) {
-      if (transaction.description?.toLowerCase().contains(_searchQuery) == true) {
+      if (transaction.description?.toLowerCase().contains(_searchQuery) ==
+          true) {
         suggestions.add(transaction.description!);
       }
     }
-    
+
     setState(() {
       _searchSuggestions = suggestions.take(5).toList();
     });
@@ -276,11 +317,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     });
   }
 
-  void _toggleAdvancedFilters() {
-    setState(() {
-      _showAdvancedFilters = !_showAdvancedFilters;
-    });
-  }
 
   void _clearAllFilters() {
     setState(() {
@@ -302,7 +338,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   Widget _buildSearchBar() {
     if (!_showSearchBar) return const SizedBox.shrink();
-    
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: ResponsiveConstants.spacing20),
       child: Column(
@@ -312,10 +348,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             decoration: BoxDecoration(
               color: CupertinoColors.systemBackground,
               borderRadius: BorderRadius.circular(ResponsiveConstants.radius16),
-              border: Border.all(
-                color: CupertinoColors.systemGrey5,
-                width: 1,
-              ),
+              border: Border.all(color: CupertinoColors.systemGrey5, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: CupertinoColors.systemGrey.withOpacity(0.1),
@@ -353,14 +386,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
             ),
           ),
-          
+
           // Search Suggestions
           if (_showSearchSuggestions && _searchSuggestions.isNotEmpty)
             Container(
               margin: EdgeInsets.only(top: ResponsiveConstants.spacing8),
               decoration: BoxDecoration(
                 color: CupertinoColors.systemBackground,
-                borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveConstants.radius12,
+                ),
                 border: Border.all(
                   color: CupertinoColors.systemGrey5,
                   width: 1,
@@ -374,47 +409,50 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ],
               ),
               child: Column(
-                children: _searchSuggestions.map((suggestion) => 
-                  GestureDetector(
-                    onTap: () => _onSuggestionTap(suggestion),
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveConstants.spacing16,
-                        vertical: ResponsiveConstants.spacing12,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.search,
-                            color: CupertinoColors.systemGrey,
-                            size: 16,
+                children: _searchSuggestions
+                    .map(
+                      (suggestion) => GestureDetector(
+                        onTap: () => _onSuggestionTap(suggestion),
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveConstants.spacing16,
+                            vertical: ResponsiveConstants.spacing12,
                           ),
-                          SizedBox(width: ResponsiveConstants.spacing8),
-                          Expanded(
-                            child: Text(
-                              suggestion,
-                              style: TextStyle(
-                                fontSize: ResponsiveConstants.fontSize14,
-                                color: CupertinoColors.label,
+                          child: Row(
+                            children: [
+                              Icon(
+                                CupertinoIcons.search,
+                                color: CupertinoColors.systemGrey,
+                                size: 16,
                               ),
-                            ),
+                              SizedBox(width: ResponsiveConstants.spacing8),
+                              Expanded(
+                                child: Text(
+                                  suggestion,
+                                  style: TextStyle(
+                                    fontSize: ResponsiveConstants.fontSize14,
+                                    color: CupertinoColors.label,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ).toList(),
+                    )
+                    .toList(),
               ),
             ),
         ],
       ),
     );
   }
-    @override
+
+  @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    
+
     return CupertinoPageScaffold(
       backgroundColor: AppTheme.getBackgroundColor(brightness),
       child: Consumer<TransactionProvider>(
@@ -429,49 +467,58 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           TransactionsHeader(
-                             onSearchTap: _toggleSearchBar,
-                             onFilterTap: _toggleAdvancedFilters,
-                           ),
-                           
-                                                      // Search Bar
-                           _buildSearchBar(),
-                           
-                           // Advanced Filters
-                           if (_showAdvancedFilters) _buildAdvancedFilters(),
-                           
-                           SizedBox(height: ResponsiveConstants.spacing16),
-                          
+                          TransactionsHeader(
+                            onSearchTap: _toggleSearchBar,
+                            currentFilter: _selectedFilter,
+                            currentSort: _sortOption,
+                            onFilterChanged: _onFilterChanged,
+                            onSortChanged: _onSortChanged,
+                            onDateRangeChanged: _onDateRangeChanged,
+                            onCategoryFilterChanged: _onCategoryFilterChanged,
+                            onAmountRangeChanged: _onAmountRangeChanged,
+                            onSearchChanged: (query) =>
+                                setState(() => _searchQuery = query),
+                            currency: _userCurrency,
+                          ),
+
+                          // Search Bar
+                          _buildSearchBar(),
+
+                          // Advanced Filters
+                          if (_showAdvancedFilters) _buildAdvancedFilters(),
+
+                          SizedBox(height: ResponsiveConstants.spacing16),
+
                           // Balance Card
                           BalanceCard(
-                            totalBalance: _calculateTotalBalance(transactionProvider),
+                            totalBalance: _calculateTotalBalance(
+                              transactionProvider,
+                            ),
                             currency: _userCurrency,
                             period: 'This Month',
                             monthlyChange: 580.50,
                             isIncreasePositive: true,
                           ),
-                          
+
                           SizedBox(height: ResponsiveConstants.spacing20),
-                          
+
                           // Filter Tabs
                           TransactionFilterTabs(
                             selectedFilter: _selectedFilter,
                             onFilterChanged: _onFilterChanged,
                           ),
-                          
+
                           // Filter Statistics
                           _buildFilterStatistics(transactionProvider),
-                          
+
                           SizedBox(height: ResponsiveConstants.spacing20),
                         ],
                       ),
                     ),
-                    
+
                     // Pull to refresh
-                    CupertinoSliverRefreshControl(
-                      onRefresh: _onRefresh,
-                    ),
-                    
+                    CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+
                     // Transaction List
                     transactionProvider.isLoading
                         ? const SliverFillRemaining(
@@ -480,108 +527,124 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             ),
                           )
                         : transactionProvider.error != null
-                            ? SliverFillRemaining(
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        CupertinoIcons.exclamationmark_circle,
-                                        size: 48,
-                                        color: CupertinoColors.systemGrey,
-                                      ),
-                                      SizedBox(height: ResponsiveConstants.spacing16),
-                                      Text(
-                                        'Error loading transactions',
-                                        style: TextStyle(
-                                          fontSize: ResponsiveConstants.fontSize18,
-                                          fontWeight: FontWeight.w600,
-                                          color: CupertinoColors.label,
-                                        ),
-                                      ),
-                                      SizedBox(height: ResponsiveConstants.spacing8),
-                                      Text(
-                                        transactionProvider.error!,
-                                        style: TextStyle(
-                                          fontSize: ResponsiveConstants.fontSize14,
-                                          color: CupertinoColors.systemGrey,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      SizedBox(height: ResponsiveConstants.spacing24),
-                                      CupertinoButton.filled(
-                                        onPressed: () => _onRefresh(),
-                                        child: const Text('Retry'),
-                                      ),
-                                    ],
+                        ? SliverFillRemaining(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    CupertinoIcons.exclamationmark_circle,
+                                    size: 48,
+                                    color: CupertinoColors.systemGrey,
                                   ),
-                                ),
-                              )
-                            : _getFilteredTransactions(transactionProvider).isEmpty
-                                ? SliverFillRemaining(
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 120,
-                                            height: 120,
-                                            decoration: BoxDecoration(
-                                              color: CupertinoColors.systemGrey6,
-                                              borderRadius: BorderRadius.circular(60),
-                                            ),
-                                            child: const Icon(
-                                              CupertinoIcons.creditcard,
-                                              size: 48,
-                                              color: CupertinoColors.systemGrey,
-                                            ),
-                                          ),
-                                          SizedBox(height: ResponsiveConstants.spacing24),
-                                          Text(
-                                            'No transactions yet',
-                                            style: TextStyle(
-                                              fontSize: ResponsiveConstants.fontSize20,
-                                              fontWeight: FontWeight.w600,
-                                              color: CupertinoColors.label,
-                                            ),
-                                          ),
-                                          SizedBox(height: ResponsiveConstants.spacing8),
-                                          Text(
-                                            'Your transactions will appear here\nonce you start adding them',
-                                            style: TextStyle(
-                                              fontSize: ResponsiveConstants.fontSize16,
-                                              color: CupertinoColors.systemGrey,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : SliverList(
-                                    delegate: SliverChildBuilderDelegate(
-                                      (context, index) {
-                                        final filteredTransactions = _getFilteredTransactions(transactionProvider);
-                                        final transaction = filteredTransactions[index];
-                                        return Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: index == filteredTransactions.length - 1 
-                                                ? ResponsiveConstants.spacing120 
-                                                : 0,
-                                          ),
-                                          child: TransactionItem(
-                                            transaction: transaction,
-                                            onTap: () => _onTransactionTap(transaction),
-                                          ),
-                                        );
-                                      },
-                                      childCount: _getFilteredTransactions(transactionProvider).length,
+                                  SizedBox(
+                                    height: ResponsiveConstants.spacing16,
+                                  ),
+                                  Text(
+                                    'Error loading transactions',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveConstants.fontSize18,
+                                      fontWeight: FontWeight.w600,
+                                      color: CupertinoColors.label,
                                     ),
                                   ),
+                                  SizedBox(
+                                    height: ResponsiveConstants.spacing8,
+                                  ),
+                                  Text(
+                                    transactionProvider.error!,
+                                    style: TextStyle(
+                                      fontSize: ResponsiveConstants.fontSize14,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveConstants.spacing24,
+                                  ),
+                                  CupertinoButton.filled(
+                                    onPressed: () => _onRefresh(),
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : _getFilteredTransactions(transactionProvider).isEmpty
+                        ? SliverFillRemaining(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.systemGrey6,
+                                      borderRadius: BorderRadius.circular(60),
+                                    ),
+                                    child: const Icon(
+                                      CupertinoIcons.creditcard,
+                                      size: 48,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveConstants.spacing24,
+                                  ),
+                                  Text(
+                                    'No transactions yet',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveConstants.fontSize20,
+                                      fontWeight: FontWeight.w600,
+                                      color: CupertinoColors.label,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveConstants.spacing8,
+                                  ),
+                                  Text(
+                                    'Your transactions will appear here\nonce you start adding them',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveConstants.fontSize16,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final filteredTransactions =
+                                    _getFilteredTransactions(
+                                      transactionProvider,
+                                    );
+                                final transaction = filteredTransactions[index];
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom:
+                                        index == filteredTransactions.length - 1
+                                        ? ResponsiveConstants.spacing120
+                                        : 0,
+                                  ),
+                                  child: TransactionItem(
+                                    transaction: transaction,
+                                    onTap: () => _onTransactionTap(transaction),
+                                  ),
+                                );
+                              },
+                              childCount: _getFilteredTransactions(
+                                transactionProvider,
+                              ).length,
+                            ),
+                          ),
                   ],
                 ),
               ),
-              
+
               // Floating Add Button
               const FloatingAddButton(),
             ],
@@ -595,9 +658,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final filteredTransactions = _getFilteredTransactions(provider);
     final totalTransactions = provider.transactions.length;
     final filteredCount = filteredTransactions.length;
-    
+
     if (totalTransactions == 0) return const SizedBox.shrink();
-    
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: ResponsiveConstants.spacing20),
       padding: EdgeInsets.all(ResponsiveConstants.spacing12),
@@ -646,10 +709,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       decoration: BoxDecoration(
         color: CupertinoColors.systemBackground,
         borderRadius: BorderRadius.circular(ResponsiveConstants.radius16),
-        border: Border.all(
-          color: CupertinoColors.systemGrey5,
-          width: 1,
-        ),
+        border: Border.all(color: CupertinoColors.systemGrey5, width: 1),
         boxShadow: [
           BoxShadow(
             color: CupertinoColors.systemGrey.withOpacity(0.1),
@@ -692,9 +752,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
             ],
           ),
-          
+
           SizedBox(height: ResponsiveConstants.spacing16),
-          
+
           // Date Range
           Text(
             'Date Range',
@@ -709,12 +769,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             children: [
               Expanded(
                 child: CupertinoButton(
-                  padding: EdgeInsets.symmetric(vertical: ResponsiveConstants.spacing8),
+                  padding: EdgeInsets.symmetric(
+                    vertical: ResponsiveConstants.spacing8,
+                  ),
                   color: CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(ResponsiveConstants.radius8),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveConstants.radius8,
+                  ),
                   onPressed: () => _selectDate(true),
                   child: Text(
-                    _startDate != null 
+                    _startDate != null
                         ? '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'
                         : 'Start Date',
                     style: TextStyle(
@@ -727,12 +791,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               SizedBox(width: ResponsiveConstants.spacing8),
               Expanded(
                 child: CupertinoButton(
-                  padding: EdgeInsets.symmetric(vertical: ResponsiveConstants.spacing8),
+                  padding: EdgeInsets.symmetric(
+                    vertical: ResponsiveConstants.spacing8,
+                  ),
                   color: CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(ResponsiveConstants.radius8),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveConstants.radius8,
+                  ),
                   onPressed: () => _selectDate(false),
                   child: Text(
-                    _endDate != null 
+                    _endDate != null
                         ? '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
                         : 'End Date',
                     style: TextStyle(
@@ -744,9 +812,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
             ],
           ),
-          
+
           SizedBox(height: ResponsiveConstants.spacing16),
-          
+
           // Amount Range
           Text(
             'Amount Range',
@@ -770,7 +838,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   },
                   decoration: BoxDecoration(
                     color: CupertinoColors.systemGrey6,
-                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius8),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveConstants.radius8,
+                    ),
                   ),
                 ),
               ),
@@ -786,15 +856,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   },
                   decoration: BoxDecoration(
                     color: CupertinoColors.systemGrey6,
-                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius8),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveConstants.radius8,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          
+
           SizedBox(height: ResponsiveConstants.spacing16),
-          
+
           // Sort Options
           Text(
             'Sort By',
@@ -839,9 +911,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               },
             ),
           ),
-          
+
           SizedBox(height: ResponsiveConstants.spacing16),
-          
+
           // Apply Button
           SizedBox(
             width: double.infinity,
@@ -868,7 +940,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         child: SafeArea(
           top: false,
           child: CupertinoDatePicker(
-            initialDateTime: isStartDate ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
+            initialDateTime: isStartDate
+                ? (_startDate ?? DateTime.now())
+                : (_endDate ?? DateTime.now()),
             mode: CupertinoDatePickerMode.date,
             onDateTimeChanged: (DateTime newDate) {
               setState(() {

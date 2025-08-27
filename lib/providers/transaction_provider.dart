@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import '../data/remote/transactions_service.dart';
+import '../services/sync_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionsService _transactionsService = TransactionsService();
+  final SyncService _syncService = SyncService();
   
   List<TransactionModel> _transactions = [];
   bool _isLoading = false;
@@ -21,7 +23,14 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      _transactions = await _transactionsService.getAllTransactions(userId);
+      // Load from local database first (offline support)
+      _transactions = await _syncService.getTransactions(userId);
+      
+      // If no local data, try to load from remote
+      if (_transactions.isEmpty) {
+        _transactions = await _transactionsService.getAllTransactions(userId);
+      }
+      
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -38,7 +47,8 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _transactionsService.addTransaction(transaction);
+      // Use sync service for offline support
+      await _syncService.addTransaction(transaction);
       _transactions.add(transaction);
       _transactions.sort((a, b) => b.date.compareTo(a.date)); // Keep sorted
       _isLoading = false;
@@ -57,7 +67,8 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _transactionsService.updateTransaction(transaction);
+      // Use sync service for offline support
+      await _syncService.updateTransaction(transaction);
       
       // Update in local list
       final index = _transactions.indexWhere((t) => t.id == transaction.id);
@@ -81,7 +92,8 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await _transactionsService.deleteTransaction(transactionId);
+      // Use sync service for offline support
+      await _syncService.deleteTransaction(transactionId);
       
       // Remove from local list
       _transactions.removeWhere((t) => t.id == transactionId);
@@ -132,5 +144,73 @@ class TransactionProvider extends ChangeNotifier {
     return _transactions
         .where((t) => t.date.isAfter(start) && t.date.isBefore(end))
         .toList();
+  }
+
+  // Sync-related methods
+  Future<void> syncNow() async {
+    await _syncService.syncNow();
+  }
+
+  Future<Map<String, dynamic>> getSyncStats(String userId) async {
+    return await _syncService.getSyncStats(userId);
+  }
+
+  Stream<bool> get syncStatusStream => _syncService.syncStatusStream;
+
+  bool get isSyncing => _syncService.isSyncing;
+
+  // Get unsynced transactions
+  List<TransactionModel> get unsyncedTransactions {
+    return _transactions.where((t) => t.syncStatus != SyncStatus.synced).toList();
+  }
+
+  // Get failed transactions
+  List<TransactionModel> get failedTransactions {
+    return _transactions.where((t) => t.syncStatus == SyncStatus.failed).toList();
+  }
+
+  // Debug method to see sync status of all transactions
+  void debugSyncStatus() {
+    print('=== SYNC STATUS DEBUG ===');
+    print('Total transactions: ${_transactions.length}');
+    
+    for (int i = 0; i < _transactions.length; i++) {
+      final transaction = _transactions[i];
+      print('Transaction ${i + 1}:');
+      print('  ID: ${transaction.id}');
+      print('  Title: ${transaction.title}');
+      print('  Amount: ${transaction.amount}');
+      print('  Sync Status: ${transaction.syncStatus}');
+      print('  Sync Attempts: ${transaction.syncAttempts}');
+      if (transaction.syncError != null) {
+        print('  Sync Error: ${transaction.syncError}');
+      }
+      print('---');
+    }
+    
+    print('Unsynced transactions: ${unsyncedTransactions.length}');
+    print('Failed transactions: ${failedTransactions.length}');
+    print('========================');
+  }
+
+  // Quick fix: Mark all pending transactions as synced (for existing data)
+  Future<void> markAllAsSynced() async {
+    for (final transaction in _transactions) {
+      if (transaction.syncStatus == SyncStatus.pending) {
+        final syncedTransaction = transaction.copyWith(
+          syncStatus: SyncStatus.synced,
+          syncAttempts: 0,
+          syncError: null,
+        );
+        await _syncService.updateTransaction(syncedTransaction);
+        
+        // Update in local list
+        final index = _transactions.indexWhere((t) => t.id == transaction.id);
+        if (index >= 0) {
+          _transactions[index] = syncedTransaction;
+        }
+      }
+    }
+    notifyListeners();
   }
 }
