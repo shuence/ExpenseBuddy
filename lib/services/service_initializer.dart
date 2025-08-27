@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'connectivity_service.dart';
 
 class ServiceInitializer {
   static final ServiceInitializer _instance = ServiceInitializer._internal();
@@ -14,6 +15,10 @@ class ServiceInitializer {
     try {
       // Initialize Firebase first
       await Firebase.initializeApp();
+      
+      // Initialize connectivity service
+      await ConnectivityService().initialize();
+      debugPrint('Connectivity service initialized');
 
       _isInitialized = true;
       debugPrint('All services initialized successfully');

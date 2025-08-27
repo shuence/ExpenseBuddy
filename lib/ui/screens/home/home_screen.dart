@@ -11,7 +11,6 @@ import '../../../services/user_preferences_service.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/budget_provider.dart';
 import '../../../router/routes.dart';
-import '../../widgets/greeting_section.dart';
 import '../../widgets/balance_card.dart';
 import '../../widgets/overview_stats.dart';
 import '../../widgets/recent_transactions.dart';

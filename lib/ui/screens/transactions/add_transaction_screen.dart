@@ -31,6 +31,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   bool _isLoadingCurrency = true;
   bool _showAmountError = false;
   bool _showTitleError = false;
+  bool _isSavingTransaction = false;
 
   @override
   void initState() {
@@ -235,19 +236,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       setState(() {
         _showTitleError = true;
       });
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Title Required'),
-          content: const Text('Please enter a title for the transaction.'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog('Title Required', 'Please enter a title for the transaction.');
       return;
     }
 
@@ -256,19 +245,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       setState(() {
         _showAmountError = true;
       });
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Amount Required'),
-          content: const Text('Please enter an amount for the transaction.'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog('Amount Required', 'Please enter an amount for the transaction.');
       return;
     }
 
@@ -277,35 +254,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     try {
       amount = double.parse(_amountController.text.trim());
       if (amount <= 0) {
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Invalid Amount'),
-            content: const Text('Please enter a valid amount greater than 0.'),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        _showErrorDialog('Invalid Amount', 'Please enter a valid amount greater than 0.');
         return;
       }
     } catch (e) {
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Invalid Amount'),
-          content: const Text('Please enter a valid number for the amount.'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog('Invalid Amount', 'Please enter a valid number for the amount.');
       return;
     }
 
@@ -321,22 +274,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       }
       
       if (userId == null) {
-        // Show error if user not found
-        if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Error'),
-              content: const Text('Unable to save transaction. Please try again.'),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
+        _showErrorDialog('Error', 'Unable to save transaction. Please try again.');
         return;
       }
 
@@ -356,43 +294,237 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         updatedAt: DateTime.now(),
       );
 
+      // Show loading state
+      setState(() {
+        _isSavingTransaction = true;
+      });
+
       try {
-        await context.read<TransactionProvider>().addTransaction(transaction);
+        // Save transaction locally first (this will be fast)
+        final result = await context.read<TransactionProvider>().addTransaction(transaction);
         
-        // Refresh budgets if it's an expense (to update spent amounts)
-        if (transaction.type == TransactionType.expense && mounted) {
-          final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
-          // Refresh budgets for the current month and the transaction month
-          final currentMonth = DateTime.now();
-          final transactionMonth = transaction.date;
-          
-          // Refresh both months if they're different
-          await budgetProvider.refreshBudgetsForMonth(userId, currentMonth);
-          if (currentMonth.month != transactionMonth.month || currentMonth.year != transactionMonth.year) {
-            await budgetProvider.refreshBudgetsForMonth(userId, transactionMonth);
+        // Show appropriate dialog based on Firebase status
+        if (mounted) {
+          if (result['firebaseSuccess'] == true) {
+            _showSuccessDialog(transaction, firebaseSuccess: true);
+          } else {
+            _showPartialSuccessDialog(transaction, result['firebaseError']);
           }
         }
         
-        if (mounted) {
-          Navigator.of(context).pop();
+        // Refresh budgets in background if it's an expense
+        if (transaction.type == TransactionType.expense && mounted) {
+          _refreshBudgetsInBackground(userId, transaction.date);
         }
+        
       } catch (e) {
         if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Error'),
-              content: Text('Failed to save transaction: $e'),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+          _showErrorDialog('Error', 'Failed to save transaction: $e');
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSavingTransaction = false;
+          });
         }
       }
+    }
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessDialog(TransactionModel transaction, {bool firebaseSuccess = true}) {
+    final isIncome = transaction.type == TransactionType.income;
+    final typeText = isIncome ? 'Income' : 'Expense';
+    final icon = isIncome ? CupertinoIcons.plus_circle_fill : CupertinoIcons.minus_circle_fill;
+    final color = isIncome ? const Color(0xFF2ECC71) : const Color(0xFFE74C3C);
+    
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 8),
+            Text('$typeText Added!'),
+          ],
+        ),
+        content: Column(
+          children: [
+            Text(
+              '${transaction.title}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 16,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              firebaseSuccess 
+                  ? 'Transaction saved successfully!'
+                  : 'Transaction saved locally!',
+              style: TextStyle(
+                fontSize: 14,
+                color: firebaseSuccess ? CupertinoColors.systemGrey : CupertinoColors.systemOrange,
+              ),
+            ),
+            if (transaction.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Note: ${transaction.description}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: CupertinoColors.systemGrey2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.of(context).pop(); // Go back to previous screen
+            },
+            child: const Text('Great!'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPartialSuccessDialog(TransactionModel transaction, String? firebaseError) {
+    final isIncome = transaction.type == TransactionType.income;
+    final typeText = isIncome ? 'Income' : 'Expense';
+    final icon = isIncome ? CupertinoIcons.plus_circle_fill : CupertinoIcons.minus_circle_fill;
+    final color = isIncome ? const Color(0xFF2ECC71) : const Color(0xFFE74C3C);
+    
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 8),
+            Text('$typeText Added!'),
+          ],
+        ),
+        content: Column(
+          children: [
+            Text(
+              '${transaction.title}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 16,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: CupertinoColors.systemOrange.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.exclamationmark_triangle,
+                        color: CupertinoColors.systemOrange,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Saved Locally',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: CupertinoColors.systemOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Transaction saved to your device. Will sync to cloud when connection is restored.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.of(context).pop(); // Go back to previous screen
+            },
+            child: const Text('Got it!'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _refreshBudgetsInBackground(String userId, DateTime transactionDate) async {
+    try {
+      final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+      final currentMonth = DateTime.now();
+      
+      // Refresh budgets for the current month and the transaction month
+      await budgetProvider.refreshBudgetsForMonth(userId, currentMonth);
+      if (currentMonth.month != transactionDate.month || currentMonth.year != transactionDate.year) {
+        await budgetProvider.refreshBudgetsForMonth(userId, transactionDate);
+      }
+    } catch (e) {
+      debugPrint('Background budget refresh failed: $e');
+      // Don't show error to user - this is background operation
     }
   }
 
@@ -417,44 +549,75 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: _saveTransaction,
-          child: Text(
-            'Save',
-            style: TextStyle(
-              color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          onPressed: _isSavingTransaction ? null : _saveTransaction,
+          child: _isSavingTransaction
+              ? CupertinoActivityIndicator(
+                  radius: 12,
+                  color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                )
+              : Text(
+                  'Save',
+                  style: TextStyle(
+                    color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         ),
       ),
       backgroundColor: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
-      child: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Hero Section with Amount Input
-                      _buildHeroSection(context, isIncome),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Transaction Details Section
-                      _buildDetailsSection(context),
-                      
-                      const SizedBox(height: 100), // Bottom padding
-                    ],
+      child: Stack(
+        children: [
+          SafeArea(
+            child: Form(
+              key: _formKey,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Hero Section with Amount Input
+                          _buildHeroSection(context, isIncome),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Transaction Details Section
+                          _buildDetailsSection(context),
+                          
+                          const SizedBox(height: 100), // Bottom padding
+                        ],
+                      ),
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Loading overlay
+          if (_isSavingTransaction)
+            Container(
+              color: CupertinoColors.systemBackground.withOpacity(0.8),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CupertinoActivityIndicator(radius: 20),
+                    SizedBox(height: 16),
+                    Text(
+                      'Saving Transaction...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

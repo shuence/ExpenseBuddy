@@ -58,8 +58,8 @@ class _HomeHeaderState extends State<HomeHeader> {
               children: [
                 // Connectivity Status Icon
                 Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  child: const ConnectivityStatusWidget(size: 16, showBackground: true),
+                  margin: const EdgeInsets.only(right: 12),
+                  child: const ConnectivityStatusWidget(size: 20, showBackground: true),
                 ),
                 
                 // User Avatar

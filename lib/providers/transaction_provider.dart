@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import '../data/remote/transactions_service.dart';
 import '../data/local/local_database_service.dart';
+import '../services/connectivity_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionsService _transactionsService = TransactionsService();
   final LocalDatabaseService _localDb = LocalDatabaseService();
+  final ConnectivityService _connectivityService = ConnectivityService();
   
   List<TransactionModel> _transactions = [];
   bool _isLoading = false;
@@ -15,6 +18,9 @@ class TransactionProvider extends ChangeNotifier {
   bool _isAddingTransaction = false;
   bool _isUpdatingTransaction = false;
   bool _isDeletingTransaction = false;
+  
+  // Auto-sync when connectivity is restored
+  StreamSubscription<ConnectionStatus>? _connectivitySubscription;
   
   // Getters
   List<TransactionModel> get transactions => _transactions;
@@ -41,15 +47,46 @@ class TransactionProvider extends ChangeNotifier {
       
       _isLoading = false;
       notifyListeners();
+      
+      // Start monitoring connectivity for auto-sync
+      _startConnectivityMonitoring();
     } catch (e) {
       _isLoading = false;
       _error = e.toString();
       notifyListeners();
     }
   }
+
+  // Start monitoring connectivity changes for auto-sync
+  void _startConnectivityMonitoring() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = _connectivityService.connectionStatusStream.listen((status) {
+      if (status == ConnectionStatus.connected) {
+        debugPrint('🌐 Connectivity restored, attempting auto-sync...');
+        _autoSyncWhenOnline();
+      }
+    });
+  }
+
+  // Auto-sync when connectivity is restored
+  Future<void> _autoSyncWhenOnline() async {
+    try {
+      if (_transactions.isNotEmpty) {
+        debugPrint('🔄 Auto-syncing transactions to Firebase...');
+        final result = await retryAllFirebaseSyncs();
+        if (result['success'] == true) {
+          debugPrint('✅ Auto-sync completed: ${result['successCount']} synced');
+        } else {
+          debugPrint('⚠️ Auto-sync failed: ${result['error']}');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Auto-sync error: $e');
+    }
+  }
   
   // Add new transaction
-  Future<void> addTransaction(TransactionModel transaction) async {
+  Future<Map<String, dynamic>> addTransaction(TransactionModel transaction) async {
     _isAddingTransaction = true;
     _error = null;
     notifyListeners();
@@ -67,13 +104,24 @@ class TransactionProvider extends ChangeNotifier {
       await _localDb.insertTransaction(transaction);
       debugPrint('✅ Saved to local database successfully');
       
-      // Try to save to Firebase
-      debugPrint('🔥 Trying to save to Firebase...');
-      try {
-        await _transactionsService.addTransaction(transaction);
-        debugPrint('✅ Saved to Firebase successfully');
-      } catch (e) {
-        debugPrint('⚠️ Failed to save to Firebase: $e (but saved locally)');
+      // Check connectivity before attempting Firebase
+      bool firebaseSuccess = false;
+      String? firebaseError;
+      
+      if (_connectivityService.isConnected) {
+        // Try to save to Firebase only if online
+        debugPrint('🔥 Network available, trying to save to Firebase...');
+        try {
+          await _transactionsService.addTransaction(transaction);
+          debugPrint('✅ Saved to Firebase successfully');
+          firebaseSuccess = true;
+        } catch (e) {
+          firebaseError = e.toString();
+          debugPrint('⚠️ Failed to save to Firebase: $e (but saved locally)');
+        }
+      } else {
+        debugPrint('📡 No network connection, skipping Firebase save');
+        firebaseError = 'No network connection';
       }
       
       // Add to local list
@@ -85,12 +133,81 @@ class TransactionProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
       debugPrint('🎉 Transaction added successfully!');
+      
+      // Return status for UI to handle
+      return {
+        'success': true,
+        'firebaseSuccess': firebaseSuccess,
+        'firebaseError': firebaseError,
+        'transaction': transaction,
+      };
     } catch (e) {
       debugPrint('❌ Failed to add transaction: $e');
       _isAddingTransaction = false;
       _error = e.toString();
       notifyListeners();
       rethrow; // Re-throw to let UI handle the error
+    }
+  }
+
+  // Retry Firebase sync for a specific transaction
+  Future<bool> retryFirebaseSync(TransactionModel transaction) async {
+    try {
+      debugPrint('🔄 Retrying Firebase sync for transaction: ${transaction.title}');
+      await _transactionsService.addTransaction(transaction);
+      debugPrint('✅ Firebase sync retry successful');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Firebase sync retry failed: $e');
+      return false;
+    }
+  }
+
+  // Retry Firebase sync for all transactions (useful when connectivity is restored)
+  Future<Map<String, dynamic>> retryAllFirebaseSyncs() async {
+    debugPrint('🔄 Starting bulk Firebase sync retry...');
+    
+    // Check connectivity first
+    if (!_connectivityService.isConnected) {
+      debugPrint('📡 No network connection, cannot sync to Firebase');
+      return {
+        'success': false,
+        'error': 'No network connection available',
+      };
+    }
+    
+    int successCount = 0;
+    int failureCount = 0;
+    
+    try {
+      // Get all transactions from local DB
+      final allTransactions = await _localDb.getAllTransactions(_transactions.first.userId);
+      
+      for (final transaction in allTransactions) {
+        try {
+          await _transactionsService.addTransaction(transaction);
+          successCount++;
+          debugPrint('✅ Synced transaction: ${transaction.title}');
+        } catch (e) {
+          failureCount++;
+          debugPrint('❌ Failed to sync transaction: ${transaction.title} - $e');
+        }
+      }
+      
+      debugPrint('🎯 Bulk sync completed: $successCount successful, $failureCount failed');
+      
+      return {
+        'success': true,
+        'successCount': successCount,
+        'failureCount': failureCount,
+        'totalCount': allTransactions.length,
+      };
+    } catch (e) {
+      debugPrint('❌ Bulk sync failed: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
     }
   }
   
@@ -108,13 +225,17 @@ class TransactionProvider extends ChangeNotifier {
       await _localDb.updateTransaction(transaction);
       debugPrint('✅ Local database updated successfully');
       
-      // Try to update Firebase
-      debugPrint('🔥 Trying to update Firebase...');
-      try {
-        await _transactionsService.updateTransaction(transaction);
-        debugPrint('✅ Firebase updated successfully');
-      } catch (e) {
-        debugPrint('⚠️ Failed to update Firebase: $e (but updated locally)');
+      // Check connectivity before attempting Firebase update
+      if (_connectivityService.isConnected) {
+        debugPrint('🔥 Network available, trying to update Firebase...');
+        try {
+          await _transactionsService.updateTransaction(transaction);
+          debugPrint('✅ Firebase updated successfully');
+        } catch (e) {
+          debugPrint('⚠️ Failed to update Firebase: $e (but updated locally)');
+        }
+      } else {
+        debugPrint('📡 No network connection, skipping Firebase update');
       }
       
       // Update in local list
@@ -175,13 +296,17 @@ class TransactionProvider extends ChangeNotifier {
       await _localDb.deleteTransaction(transactionId);
       debugPrint('✅ Deleted from local database successfully');
       
-      // Try to delete from Firebase
-      debugPrint('🔥 Trying to delete from Firebase...');
-      try {
-        await _transactionsService.deleteTransaction(transactionId);
-        debugPrint('✅ Deleted from Firebase successfully');
-      } catch (e) {
-        debugPrint('⚠️ Failed to delete from Firebase: $e (but deleted locally)');
+      // Check connectivity before attempting Firebase delete
+      if (_connectivityService.isConnected) {
+        debugPrint('🔥 Network available, trying to delete from Firebase...');
+        try {
+          await _transactionsService.deleteTransaction(transactionId);
+          debugPrint('✅ Deleted from Firebase successfully');
+        } catch (e) {
+          debugPrint('⚠️ Failed to delete from Firebase: $e (but deleted locally)');
+        }
+      } else {
+        debugPrint('📡 No network connection, skipping Firebase delete');
       }
       
       // Remove from local list
@@ -257,5 +382,11 @@ class TransactionProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
   }
 }
