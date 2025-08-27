@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../data/repositories/expense_repository.dart';
 import '../models/expense.dart';
+import '../data/remote/firestore_service.dart';
 
 // Events
 abstract class ExpenseEvent extends Equatable {
@@ -75,9 +75,9 @@ class ExpenseError extends ExpenseState {
 
 // Bloc
 class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
-  final ExpenseRepository _expenseRepository;
-  
-  ExpenseBloc(this._expenseRepository) : super(ExpenseInitial()) {
+  final FirestoreService _firestoreService = FirestoreService();
+
+  ExpenseBloc() : super(ExpenseInitial()) {
     on<LoadExpenses>(_onLoadExpenses);
     on<AddExpense>(_onAddExpense);
     on<UpdateExpense>(_onUpdateExpense);
@@ -87,7 +87,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   Future<void> _onLoadExpenses(LoadExpenses event, Emitter<ExpenseState> emit) async {
     emit(ExpenseLoading());
     try {
-      final expenses = await _expenseRepository.getExpenses(event.userId);
+      final expenses = await _firestoreService.getUserExpenses(event.userId).first;
       emit(ExpenseLoaded(expenses));
     } catch (e) {
       emit(ExpenseError(e.toString()));
@@ -96,7 +96,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   
   Future<void> _onAddExpense(AddExpense event, Emitter<ExpenseState> emit) async {
     try {
-      await _expenseRepository.addExpense(event.expense);
+      await _firestoreService.addExpense(event.expense);
       add(LoadExpenses(event.expense.userId));
     } catch (e) {
       emit(ExpenseError(e.toString()));
@@ -105,7 +105,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   
   Future<void> _onUpdateExpense(UpdateExpense event, Emitter<ExpenseState> emit) async {
     try {
-      await _expenseRepository.updateExpense(event.expense);
+      await _firestoreService.updateExpense(event.expense);
       add(LoadExpenses(event.expense.userId));
     } catch (e) {
       emit(ExpenseError(e.toString()));
@@ -114,7 +114,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   
   Future<void> _onDeleteExpense(DeleteExpense event, Emitter<ExpenseState> emit) async {
     try {
-      await _expenseRepository.deleteExpense(event.expenseId);
+      await _firestoreService.deleteExpense(event.expenseId);
       // Reload expenses
     } catch (e) {
       emit(ExpenseError(e.toString()));

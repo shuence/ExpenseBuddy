@@ -5,7 +5,8 @@ import '../../../models/user_preferences_model.dart';
 import '../../../services/user_preferences_service.dart';
 import '../../../services/firebase_service.dart';
 import '../../../services/permission_service.dart';
-import '../../../services/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../router/routes.dart';
 
 class UserPreferencesScreen extends StatefulWidget {
   const UserPreferencesScreen({super.key});
@@ -26,9 +27,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
   // Permission states
   bool _locationPermission = false;
   bool _cameraPermission = false;
-  bool _storagePermission = false;
   bool _smsPermission = false;
-  bool _biometricPermission = false;
   bool _notificationPermission = false;
   
   // Location data
@@ -88,21 +87,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
     }
   }
 
-  // Request storage permission
-  Future<void> _requestStoragePermission() async {
-    try {
-      final granted = await _permissionService.requestStoragePermission();
-      setState(() => _storagePermission = granted);
-      if (granted) {
-        _showSuccessDialog('Storage Access', 'Storage permission granted successfully!');
-      } else {
-        _showErrorDialog('Storage Permission', 'Storage permission denied');
-      }
-    } catch (e) {
-      _showErrorDialog('Error', 'Failed to request storage permission: $e');
-    }
-  }
-
   // Request SMS permission
   Future<void> _requestSmsPermission() async {
     try {
@@ -133,21 +117,6 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
     }
   }
 
-  // Request biometric permission
-  Future<void> _requestBiometricPermission() async {
-    try {
-      final granted = await _permissionService.requestBiometricPermission();
-      setState(() => _biometricPermission = granted);
-      if (granted) {
-        _showSuccessDialog('Biometric Access', 'Biometric authentication enabled!');
-      } else {
-        _showErrorDialog('Biometric Permission', 'Biometric authentication not available');
-      }
-    } catch (e) {
-      _showErrorDialog('Error', 'Failed to check biometric availability: $e');
-    }
-  }
-
   void _showSuccessDialog(String title, String message) {
     showCupertinoDialog(
       context: context,
@@ -174,10 +143,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       setState(() {
         _locationPermission = results['location'] ?? false;
         _cameraPermission = results['camera'] ?? false;
-        _storagePermission = results['storage'] ?? false;
         _smsPermission = results['sms'] ?? false;
         _notificationPermission = results['notification'] ?? false;
-        _biometricPermission = results['biometric'] ?? false;
       });
 
       // If location permission was granted, get location data
@@ -196,7 +163,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
       final grantedCount = results.values.where((granted) => granted).length;
       _showSuccessDialog(
         'Permissions Updated', 
-        '$grantedCount out of 6 permissions granted successfully!'
+        '$grantedCount out of 4 permissions granted successfully!'
       );
     } catch (e) {
       _showErrorDialog('Error', 'Failed to request permissions: $e');
@@ -219,7 +186,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         throw Exception('User not authenticated');
       }
 
-      // Create user preferences
+            // Create user preferences
       final preferences = await _preferencesService.createInitialPreferences(
         userId: userId,
         country: _selectedCountry!.name,
@@ -230,14 +197,13 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         city: _locationData?['city'],
         state: _locationData?['state'],
       );
+      debugPrint('Preferences: $preferences');
 
       // Update permissions and location data
       final updates = {
         'locationPermission': _locationPermission,
         'cameraPermission': _cameraPermission,
-        'storagePermission': _storagePermission,
         'smsPermission': _smsPermission,
-        'biometricPermission': _biometricPermission,
         'notificationPermission': _notificationPermission,
         'isFirstTimeSetup': false,
         'updatedAt': DateTime.now().toIso8601String(),
@@ -258,7 +224,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
 
       if (mounted) {
         // Navigate to home screen
-        NavigationService().handlePreferencesComplete(context);
+        if (!mounted) return;
+        context.go(AppRoutes.home);
       }
     } catch (e) {
       if (mounted) {
@@ -466,7 +433,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         // Permission toggles
         _buildPermissionToggle(
           title: 'Location Access',
-          subtitle: 'For location-based expense tracking',
+          subtitle: 'For location-based expenses',
           icon: CupertinoIcons.location,
           value: _locationPermission,
           onChanged: (value) {
@@ -492,23 +459,11 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           },
         ),
         
-        _buildPermissionToggle(
-          title: 'Storage Access',
-          subtitle: 'For saving receipts and documents',
-          icon: CupertinoIcons.folder,
-          value: _storagePermission,
-          onChanged: (value) {
-            if (value) {
-              _requestStoragePermission();
-            } else {
-              setState(() => _storagePermission = false);
-            }
-          },
-        ),
+
         
         _buildPermissionToggle(
           title: 'SMS Access',
-          subtitle: 'For automatic expense detection from messages',
+          subtitle: 'For automatic expense detection',
           icon: CupertinoIcons.chat_bubble,
           value: _smsPermission,
           onChanged: (value) {
@@ -520,19 +475,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           },
         ),
         
-        _buildPermissionToggle(
-          title: 'Biometric Authentication',
-          subtitle: 'For secure app access',
-          icon: CupertinoIcons.person_crop_circle,
-          value: _biometricPermission,
-          onChanged: (value) {
-            if (value) {
-              _requestBiometricPermission();
-            } else {
-              setState(() => _biometricPermission = false);
-            }
-          },
-        ),
+
         
         _buildPermissionToggle(
           title: 'Push Notifications',
@@ -553,22 +496,30 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
         // Request All Permissions Button
         SizedBox(
           width: double.infinity,
-          child: CupertinoButton.filled(
-            onPressed: _isLoading ? null : _requestAllPermissions,
-            padding: EdgeInsets.symmetric(
-              vertical: ResponsiveConstants.spacing16,
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+              borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
             ),
-            borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
-            child: _isLoading
-                ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                : Text(
-                    'Request All Permissions',
-                    style: TextStyle(
-                      fontSize: ResponsiveConstants.fontSize16,
-                      fontWeight: FontWeight.w600,
-                      color: CupertinoColors.white,
+            child: CupertinoButton(
+              onPressed: _isLoading ? null : _requestAllPermissions,
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveConstants.spacing16,
+              ),
+              borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+              color: CupertinoColors.transparent,
+              child: _isLoading
+                  ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                  : Text(
+                      'Request All Permissions',
+                      style: TextStyle(
+                        fontSize: ResponsiveConstants.fontSize16,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.white,
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
       ],
@@ -616,8 +567,8 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: ResponsiveConstants.fontSize14,
-                    color: CupertinoColors.systemGrey,
+                    fontSize: ResponsiveConstants.fontSize12,
+                    color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
                   ),
                 ),
               ],
@@ -666,7 +617,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
             children: [
               _buildSummaryRow('Country', _selectedCountry?.name ?? 'Not selected'),
               _buildSummaryRow('Currency', '${_selectedCountry?.currencyCode ?? 'USD'} (${_selectedCountry?.currencySymbol ?? '\$'})'),
-              _buildSummaryRow('Permissions Granted', '${[_locationPermission, _cameraPermission, _storagePermission, _smsPermission, _biometricPermission, _notificationPermission].where((p) => p).length}/6'),
+                             _buildSummaryRow('Permissions Granted', '${[_locationPermission, _cameraPermission, _smsPermission, _notificationPermission].where((p) => p).length}/4'),
             ],
           ),
         ),
@@ -702,8 +653,19 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          if (_currentStep > 0) {
+            setState(() => _currentStep--);
+          } else {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: CupertinoPageScaffold(
+      backgroundColor: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
       navigationBar: CupertinoNavigationBar(
         middle: Text(
           'Setup Preferences',
@@ -729,44 +691,62 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                     if (_currentStep == 1) _buildPermissionsStep(),
                     if (_currentStep == 2) _buildFinalStep(),
                     
-                    SizedBox(height: ResponsiveConstants.spacing32),
+                    SizedBox(height: ResponsiveConstants.spacing16),
                     
                     // Navigation buttons
                     if (_currentStep < 2) ...[
-                      CupertinoButton.filled(
-                        onPressed: _selectedCountry == null ? null : () {
-                          setState(() => _currentStep++);
-                        },
-                        padding: EdgeInsets.symmetric(
-                          vertical: ResponsiveConstants.spacing16,
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
                         ),
-                        borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
-                        child: Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: ResponsiveConstants.fontSize18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
+                        child: CupertinoButton(
+                          onPressed: _selectedCountry == null ? null : () {
+                            setState(() => _currentStep++);
+                          },
+                          padding: EdgeInsets.symmetric(
+                            vertical: ResponsiveConstants.spacing16,
+                          ),
+                          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+                          color: CupertinoColors.transparent,
+                          child: Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: ResponsiveConstants.fontSize18,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
                           ),
                         ),
                       ),
                     ] else ...[
-                      CupertinoButton.filled(
-                        onPressed: _isLoading ? null : _savePreferences,
-                        padding: EdgeInsets.symmetric(
-                          vertical: ResponsiveConstants.spacing16,
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
                         ),
-                        borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
-                        child: _isLoading
-                            ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                            : Text(
-                                'Complete Setup',
-                                style: TextStyle(
-                                  fontSize: ResponsiveConstants.fontSize18,
-                                  fontWeight: FontWeight.w600,
-                                  color: CupertinoColors.white,
+                        child: CupertinoButton(
+                          onPressed: _isLoading ? null : _savePreferences,
+                          padding: EdgeInsets.symmetric(
+                            vertical: ResponsiveConstants.spacing16,
+                          ),
+                          borderRadius: BorderRadius.circular(ResponsiveConstants.radius12),
+                          color: CupertinoColors.transparent,
+                          child: _isLoading
+                              ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                              : Text(
+                                  'Complete Setup',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveConstants.fontSize18,
+                                    fontWeight: FontWeight.w600,
+                                    color: CupertinoColors.white,
+                                  ),
                                 ),
-                              ),
+                        ),
                       ),
                     ],
                     
@@ -795,6 +775,7 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

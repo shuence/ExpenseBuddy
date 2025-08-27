@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../services/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../router/routes.dart';
+import '../../../services/shared_prefs_service.dart';
 
 class EmailAuthScreen extends StatefulWidget {
   final bool initialSignUpMode;
@@ -80,6 +82,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
       }
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
@@ -204,12 +207,24 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (!mounted) return;
+        
         if (state is Authenticated) {
-          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: true);
+          SharedPrefsService.getInstance().then((sp) async {
+            await sp.saveUser(state.user);
+            if (!mounted) return;
+            context.go(AppRoutes.home);
+          });
         } else if (state is AuthenticatedButNoPreferences) {
-          NavigationService().handleSuccessfulAuth(context, state.user, hasPreferences: false);
+          SharedPrefsService.getInstance().then((sp) async {
+            await sp.saveUser(state.user);
+            if (!mounted) return;
+            context.go(AppRoutes.userPreferences);
+          });
         } else if (state is AuthError) {
-          _showErrorDialog('Authentication Error', state.message);
+          if (mounted) {
+            _showErrorDialog('Authentication Error', state.message);
+          }
         }
       },
       child: CupertinoPageScaffold(
@@ -319,7 +334,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                     alignment: Alignment.centerRight,
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: () => NavigationService().navigateToForgotPassword(context),
+                      onPressed: () => context.push(AppRoutes.forgotPassword),
                       child: Text(
                         'Forgot Password?',
                         style: TextStyle(

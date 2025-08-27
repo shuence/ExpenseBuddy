@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../providers/onboarding_provider.dart';
-import '../../../services/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../router/routes.dart';
+import '../../../services/shared_prefs_service.dart';
 import 'widgets/onboarding_page_widget.dart';
 import 'widgets/onboarding_indicator.dart';
 
@@ -81,14 +83,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _completeOnboarding() {
     context.read<OnboardingBloc>().add(const CompleteOnboarding());
-    NavigationService().markOnboardingCompleted();
-    NavigationService().navigateBasedOnUserState(context);
+    SharedPrefsService.getInstance().then((sp) async {
+      await sp.setFirstLaunch(false);
+      if (!mounted) return;
+      context.go(AppRoutes.login);
+    });
   }
 
   void _skipOnboarding() {
     context.read<OnboardingBloc>().add(const CompleteOnboarding());
-    NavigationService().markOnboardingCompleted();
-    NavigationService().navigateBasedOnUserState(context);
+    SharedPrefsService.getInstance().then((sp) async {
+      await sp.setFirstLaunch(false);
+      if (!mounted) return;
+      context.go(AppRoutes.login);
+    });
   }
 
   @override
@@ -96,8 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return BlocListener<OnboardingBloc, OnboardingState>(
       listener: (context, state) {
         if (state is OnboardingLoaded && state.hasSeenOnboarding) {
-          // User has already seen onboarding, navigate based on user state
-          NavigationService().navigateBasedOnUserState(context);  
+          context.go(AppRoutes.login);
         }
       },
       child: BlocBuilder<OnboardingBloc, OnboardingState>(

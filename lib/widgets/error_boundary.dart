@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import '../services/navigation_service.dart';
+import 'package:go_router/go_router.dart';
 import '../router/routes.dart';
 
 class ErrorBoundary extends StatefulWidget {
@@ -132,13 +132,14 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
     });
   }
 
-  void _goToHome() {
+  Future<void> _goToHome() async {
     try {
-      NavigationService().emergencyNavigate(context);
+      if (!mounted) return;
+      context.go(AppRoutes.home);
     } catch (e) {
       debugPrint('Emergency navigation failed: $e');
       // Last resort: go to onboarding
-      Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
+      if (mounted) context.go(AppRoutes.onboarding);
     }
   }
 

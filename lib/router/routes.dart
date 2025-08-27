@@ -12,6 +12,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   
   // Main App
+  static const String home = '/home';
   static const String expenses = '/expenses';
   static const String summary = '/summary';
   static const String addExpense = '/add-expense';

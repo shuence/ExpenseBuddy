@@ -1,23 +1,21 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../providers/theme_provider.dart';
+import '../../services/theme_service.dart';
 
 class ThemeToggle extends StatelessWidget {
   const ThemeToggle({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ThemeBloc, ThemeState>(
-      builder: (context, state) {
-        final isDarkMode = state is ThemeLoaded ? state.isDarkMode : false;
-        
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeService.instance.isDarkModeNotifier,
+      builder: (context, isDark, _) {
         return CupertinoButton(
           padding: const EdgeInsets.all(8),
           onPressed: () {
-            context.read<ThemeBloc>().add(const ToggleTheme());
+            ThemeService.instance.toggle();
           },
           child: Icon(
-            isDarkMode ? CupertinoIcons.sun_max : CupertinoIcons.moon,
+            isDark ? CupertinoIcons.sun_max : CupertinoIcons.moon,
             color: CupertinoTheme.of(context).primaryColor,
             size: 24,
           ),

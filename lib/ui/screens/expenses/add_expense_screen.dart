@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import '../../../providers/expense_provider.dart';
 import '../../../models/expense.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../router/routes.dart';
 // Generate simple ID for demo purposes
 String _generateId() {
   return DateTime.now().millisecondsSinceEpoch.toString();
@@ -206,6 +204,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               : _descriptionController.text.trim(),
           userId: 'demo_user',
           currency: _selectedCurrency,
+          // Removed type field; model does not define it
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -213,7 +212,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         context.read<ExpenseBloc>().add(AddExpense(expense));
 
         if (mounted) {
-          context.go(AppRoutes.expenses);
+          Navigator.of(context).pop();
         }
       } catch (e) {
         if (mounted) {
@@ -258,9 +257,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         backgroundColor: AppTheme.getSurfaceColor(CupertinoTheme.brightnessOf(context)),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => context.pop(),
+          onPressed: () => Navigator.of(context).pop(),
           child: Icon(
-            CupertinoIcons.back,
+            CupertinoIcons.xmark,
             color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
           ),
         ),

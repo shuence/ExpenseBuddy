@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/responsive_constants.dart';
-import '../../../services/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../router/routes.dart';
+import '../../../services/shared_prefs_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,14 +44,31 @@ class _SplashScreenState extends State<SplashScreen>
     _animationController.forward();
 
     // Navigate based on user state after animation completes
-    Future.delayed(const Duration(milliseconds: 3000), () {
+    Future.delayed(const Duration(milliseconds: 3000), () async {
       if (mounted) {
         try {
-          NavigationService().checkAuthenticationAndNavigate(context);
+          // Add a small delay to ensure router is fully initialized
+          await Future.delayed(const Duration(milliseconds: 100));
+          try {
+            final sp = await SharedPrefsService.getInstance();
+            final isFirst = sp.isFirstLaunch();
+            final user = sp.getUser();
+            if (!mounted) return;
+            if (user != null) {
+              context.go(AppRoutes.home);
+            } else if (isFirst) {
+              context.go(AppRoutes.onboarding);
+            } else {
+              context.go(AppRoutes.login);
+            }
+          } catch (e) {
+            if (!mounted) return;
+            context.go(AppRoutes.onboarding);
+          }
         } catch (e) {
           debugPrint('Navigation failed, using emergency navigation: $e');
-          // Use emergency navigation if normal navigation fails
-          NavigationService().emergencyNavigate(context);
+          // Fallback
+          if (mounted) context.go(AppRoutes.onboarding);
         }
       }
     });

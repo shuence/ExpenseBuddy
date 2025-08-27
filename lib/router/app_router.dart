@@ -10,11 +10,16 @@ import '../ui/screens/auth/forgot_password_screen.dart';
 import '../ui/screens/expenses/expense_list_screen.dart';
 import '../ui/screens/summary/summary_screen.dart';
 import 'routes.dart';
+import '../ui/screens/main/home_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: AppRoutes.splash,
     routes: [
+      GoRoute(
+        path: AppRoutes.home,
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
