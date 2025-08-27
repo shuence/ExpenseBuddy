@@ -82,4 +82,7 @@ dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    
+    // Google Play Core for deferred components support
+    implementation("com.google.android.play:core:1.10.3")
 }

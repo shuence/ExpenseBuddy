@@ -51,3 +51,16 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
+
+# Google Play Core - Keep classes for deferred components and split install
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
+# Specifically keep the classes mentioned in the error
+-keep class com.google.android.play.core.splitcompat.SplitCompatApplication { *; }
+-keep class com.google.android.play.core.splitinstall.** { *; }
+-keep class com.google.android.play.core.tasks.** { *; }
+
+# Flutter Play Store Split Application support
+-keep class io.flutter.embedding.android.FlutterPlayStoreSplitApplication { *; }
+-keep class io.flutter.embedding.engine.deferredcomponents.** { *; }
