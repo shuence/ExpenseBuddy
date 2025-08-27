@@ -15,8 +15,6 @@ import 'widgets/settings_item.dart';
 import 'widgets/sign_out_button.dart';
 import 'widgets/version_info.dart';
 import '../../../providers/transaction_provider.dart';
-import '../../../services/sync_service.dart';
-import '../../../ui/widgets/sync_status_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -53,69 +51,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _refreshData() async {
     await _loadUserPreferences();
-  }
-
-  Future<void> _triggerManualSync() async {
-    try {
-      debugPrint('🔄 Manual sync triggered from profile screen');
-      final syncService = SyncService();
-      
-      if (!syncService.isSyncing) {
-        await syncService.syncNow();
-        debugPrint('✅ Manual sync completed');
-        
-        // Show success message
-        if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Sync Complete'),
-              content: const Text('Your data has been synced successfully!'),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        debugPrint('⚠️ Sync already in progress');
-        if (mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Sync in Progress'),
-              content: const Text('A sync is already running. Please wait for it to complete.'),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Manual sync failed: $e');
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Sync Failed'),
-            content: Text('Failed to sync data: $e'),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    }
   }
 
   String _getCurrencyDisplay() {
@@ -264,28 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 context.push(AppRoutes.notificationsSettings);
                               },
                             ),
-                            // Sync Section
-                            SettingsItem(
-                              icon: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.activeBlue,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  CupertinoIcons.arrow_clockwise,
-                                  color: CupertinoColors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              title: 'Sync Data',
-                              subtitle: 'Sync transactions between devices',
-                              trailing: const SyncStatusWidget(size: 20),
-                              onTap: () {
-                                _triggerManualSync();
-                              },
-                            ),
+                            // Removed backup & sync section
                           ],
                         ),
                         

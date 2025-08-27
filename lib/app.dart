@@ -12,7 +12,7 @@ import 'providers/auth_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'data/remote/auth_service.dart';
-import 'services/sync_service.dart';
+// Removed sync service
 
 
 class ExpenseBuddyApp extends StatefulWidget {
@@ -40,24 +40,7 @@ class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> with WidgetsBindingOb
     super.didChangeAppLifecycleState(state);
     
     if (state == AppLifecycleState.resumed) {
-      // App came to foreground - trigger sync
-      _triggerForegroundSync();
-    }
-  }
-
-  Future<void> _triggerForegroundSync() async {
-    try {
-      debugPrint('🔄 App came to foreground - triggering sync...');
-      final syncService = SyncService();
-      
-      if (!syncService.isSyncing) {
-        await syncService.syncNow();
-        debugPrint('✅ Foreground sync completed');
-      } else {
-        debugPrint('⚠️ Sync already in progress, skipping foreground sync');
-      }
-    } catch (e) {
-      debugPrint('❌ Failed to trigger foreground sync: $e');
+      // App came to foreground - no sync needed
     }
   }
 
