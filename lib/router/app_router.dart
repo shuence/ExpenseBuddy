@@ -20,7 +20,7 @@ import '../models/onboarding_model.dart';
 import '../ui/screens/profile/pages/account_settings_screen.dart';
 import '../ui/screens/profile/pages/currency_settings_screen.dart';
 import '../ui/screens/profile/pages/notifications_settings_screen.dart';
-import '../ui/screens/profile/pages/backup_sync_screen.dart';
+// Removed backup sync screen import
 import '../ui/screens/profile/pages/privacy_security_screen.dart';
 import '../ui/screens/profile/pages/app_preferences_screen.dart';
 import '../ui/screens/profile/pages/help_support_screen.dart';
@@ -124,10 +124,7 @@ class AppRouter {
         path: AppRoutes.notificationsSettings,
         builder: (context, state) => const NotificationsSettingsScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.backupSyncSettings,
-        builder: (context, state) => const BackupSyncScreen(),
-      ),
+              // Removed backup sync route
       GoRoute(
         path: AppRoutes.privacySecuritySettings,
         builder: (context, state) => const PrivacySecurityScreen(),

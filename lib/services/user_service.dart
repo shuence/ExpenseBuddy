@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'dart:convert';
 import '../data/remote/auth_service.dart';
-import 'sync_service.dart';
+// Removed sync service import
 /// UserService provides user data management with intelligent caching strategy.
 /// 
 /// Caching Strategy:
@@ -222,18 +222,5 @@ class UserService {
     return user.displayName.isNotEmpty && user.email.isNotEmpty;
   }
 
-  // Trigger sync when user logs in
-  Future<void> triggerUserLoginSync(String userId) async {
-    try {
-      print('User logged in - triggering sync for user: $userId');
-      final syncService = SyncService();
-      
-      // Fetch all Firebase data for this user to local DB
-      await syncService.fetchFirebaseData();
-      
-      print('User login sync completed for user: $userId');
-    } catch (e) {
-      print('Failed to trigger user login sync: $e');
-    }
-  }
+  // No sync needed - simplified approach
 }

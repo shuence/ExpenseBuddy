@@ -100,10 +100,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         filtered = provider.transactions;
         break;
       case TransactionFilter.income:
-        filtered = provider.income;
+        filtered = provider.getTransactionsByType(TransactionType.income);
         break;
       case TransactionFilter.expenses:
-        filtered = provider.expenses;
+        filtered = provider.getTransactionsByType(TransactionType.expense);
         break;
       case TransactionFilter.transfer:
         filtered = provider.transactions

@@ -1,45 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import '../data/remote/transactions_service.dart';
-import '../services/sync_service.dart';
+import '../data/local/local_database_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionsService _transactionsService = TransactionsService();
-  final SyncService _syncService = SyncService();
-  
-  TransactionProvider() {
-    _initializeSyncService();
-  }
-  
-  Future<void> _initializeSyncService() async {
-    debugPrint('🚨 [PROVIDER] TransactionProvider created, syncService: $_syncService');
-    debugPrint('🚨 [PROVIDER] About to create SyncService...');
-    final testSyncService = SyncService();
-    debugPrint('🚨 [PROVIDER] Test SyncService created: $testSyncService');
-    debugPrint('🚨 [PROVIDER] Test SyncService runtimeType: ${testSyncService.runtimeType}');
-    
-    // Test direct call to sync service
-    debugPrint('🚨 [PROVIDER] Testing direct call to testSyncService.addTransaction...');
-    try {
-      final testTransaction = TransactionModel(
-        id: 'test-123',
-        title: 'Test Transaction',
-        amount: 100,
-        category: 'Test',
-        date: DateTime.now(),
-        description: 'Test description',
-        userId: 'test-user',
-        currency: 'USD',
-        type: TransactionType.expense,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      await testSyncService.addTransaction(testTransaction);
-      debugPrint('🚨 [PROVIDER] Direct test call SUCCESSFUL!');
-    } catch (e) {
-      debugPrint('🚨 [PROVIDER] Direct test call FAILED: $e');
-    }
-  }
+  final LocalDatabaseService _localDb = LocalDatabaseService();
   
   List<TransactionModel> _transactions = [];
   bool _isLoading = false;
@@ -65,8 +31,8 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      // Load from local database first (offline support)
-      _transactions = await _syncService.getTransactions(userId);
+      // Load from local database first
+      _transactions = await _localDb.getAllTransactions(userId);
       
       // If no local data, try to load from remote
       if (_transactions.isEmpty) {
@@ -96,20 +62,18 @@ class TransactionProvider extends ChangeNotifier {
       debugPrint('🏷️ Category: ${transaction.category}');
       debugPrint('💰 Type: ${transaction.type}');
       
-      // Use sync service for offline support
-      debugPrint('🔄 Starting sync service transaction...');
-      debugPrint('🚨 [PROVIDER] About to call _syncService.addTransaction');
-      debugPrint('🚨 [PROVIDER] _syncService instance: $_syncService');
-      debugPrint('🚨 [PROVIDER] _syncService runtimeType: ${_syncService.runtimeType}');
-      debugPrint('🚨 [PROVIDER] _syncService is SyncService: ${_syncService is SyncService}');
+      // Save to local database first
+      debugPrint('💾 Saving to local database...');
+      await _localDb.insertTransaction(transaction);
+      debugPrint('✅ Saved to local database successfully');
+      
+      // Try to save to Firebase
+      debugPrint('🔥 Trying to save to Firebase...');
       try {
-        await _syncService.addTransaction(transaction);
-        debugPrint('🚨 [PROVIDER] _syncService.addTransaction completed successfully');
-        debugPrint('✅ Sync service transaction completed');
+        await _transactionsService.addTransaction(transaction);
+        debugPrint('✅ Saved to Firebase successfully');
       } catch (e) {
-        debugPrint('❌ [SYNC ERROR] Sync service failed: $e');
-        debugPrint('❌ [SYNC ERROR] Stack trace: ${StackTrace.current}');
-        rethrow;
+        debugPrint('⚠️ Failed to save to Firebase: $e (but saved locally)');
       }
       
       // Add to local list
@@ -139,10 +103,19 @@ class TransactionProvider extends ChangeNotifier {
     try {
       debugPrint('🔄 Updating transaction: ${transaction.title} (${transaction.id})');
       
-      // Use sync service for offline support
-      debugPrint('🔄 Starting sync service update...');
-      await _syncService.updateTransaction(transaction);
-      debugPrint('✅ Sync service update completed');
+      // Update local database first
+      debugPrint('💾 Updating local database...');
+      await _localDb.updateTransaction(transaction);
+      debugPrint('✅ Local database updated successfully');
+      
+      // Try to update Firebase
+      debugPrint('🔥 Trying to update Firebase...');
+      try {
+        await _transactionsService.updateTransaction(transaction);
+        debugPrint('✅ Firebase updated successfully');
+      } catch (e) {
+        debugPrint('⚠️ Failed to update Firebase: $e (but updated locally)');
+      }
       
       // Update in local list
       final index = _transactions.indexWhere((t) => t.id == transaction.id);
@@ -197,16 +170,23 @@ class TransactionProvider extends ChangeNotifier {
         debugPrint('📱 Found transaction: ${transaction.title} (${transaction.amount})');
       }
       
-      // Use sync service for offline support
-      debugPrint('🔄 Starting sync service deletion...');
-      await _syncService.deleteTransaction(transactionId);
-      debugPrint('✅ Sync service deletion completed');
+      // Delete from local database first
+      debugPrint('💾 Deleting from local database...');
+      await _localDb.deleteTransaction(transactionId);
+      debugPrint('✅ Deleted from local database successfully');
+      
+      // Try to delete from Firebase
+      debugPrint('🔥 Trying to delete from Firebase...');
+      try {
+        await _transactionsService.deleteTransaction(transactionId);
+        debugPrint('✅ Deleted from Firebase successfully');
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete from Firebase: $e (but deleted locally)');
+      }
       
       // Remove from local list
-      final initialCount = _transactions.length;
       _transactions.removeWhere((t) => t.id == transactionId);
-      final finalCount = _transactions.length;
-      debugPrint('📱 Transaction removed from local list. Count: $initialCount → $finalCount');
+      debugPrint('📱 Transaction removed from local list. Total: ${_transactions.length}');
       
       _isDeletingTransaction = false;
       _error = null;
@@ -221,31 +201,18 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
   
-  // Get expenses only
-  List<TransactionModel> get expenses => 
-      _transactions.where((t) => t.type == TransactionType.expense).toList();
-  
-  // Get income only
-  List<TransactionModel> get income => 
-      _transactions.where((t) => t.type == TransactionType.income).toList();
-      
-  // Get total income
-  double getTotalIncome(String currency) {
-    return income
-        .where((t) => t.currency == currency)
-        .fold(0, (sum, t) => sum + t.amount);
+  // Get transaction by ID
+  TransactionModel? getTransaction(String id) {
+    try {
+      return _transactions.firstWhere((t) => t.id == id);
+    } catch (e) {
+      return null;
+    }
   }
   
-  // Get total expenses
-  double getTotalExpenses(String currency) {
-    return expenses
-        .where((t) => t.currency == currency)
-        .fold(0, (sum, t) => sum + t.amount);
-  }
-  
-  // Get balance
-  double getBalance(String currency) {
-    return getTotalIncome(currency) - getTotalExpenses(currency);
+  // Get transactions by type
+  List<TransactionModel> getTransactionsByType(TransactionType type) {
+    return _transactions.where((t) => t.type == type).toList();
   }
   
   // Get transactions by category
@@ -259,91 +226,36 @@ class TransactionProvider extends ChangeNotifier {
         .where((t) => t.date.isAfter(start) && t.date.isBefore(end))
         .toList();
   }
-
-  // Sync-related methods
-  Future<void> syncNow() async {
-    await _syncService.syncNow();
+  
+  // Get total amount by type
+  double getTotalAmountByType(TransactionType type) {
+    return _transactions
+        .where((t) => t.type == type)
+        .fold(0.0, (sum, t) => sum + t.amount);
   }
-
-  Future<void> fullSync() async {
-    await _syncService.fullSync();
+  
+  // Get total amount by category
+  double getTotalAmountByCategory(String category) {
+    return _transactions
+        .where((t) => t.category == category)
+        .fold(0.0, (sum, t) => sum + t.amount);
   }
-
-  Future<void> fetchFirebaseData() async {
-    await _syncService.fetchFirebaseData();
+  
+  // Get total amount by date range
+  double getTotalAmountByDateRange(DateTime start, DateTime end) {
+    return getTransactionsByDateRange(start, end)
+        .fold(0.0, (sum, t) => sum + t.amount);
   }
-
-  Future<void> retryFailedSyncs() async {
-    await _syncService.retryFailedSyncs();
-  }
-
-  Future<Map<String, dynamic>> getSyncStats(String userId) async {
-    return await _syncService.getSyncStats(userId);
-  }
-
-  Stream<bool> get syncStatusStream => _syncService.syncStatusStream;
-
-  bool get isSyncing => _syncService.isSyncing;
-
-  // Get unsynced transactions
-  List<TransactionModel> get unsyncedTransactions {
-    return _transactions.where((t) => t.syncStatus != SyncStatus.synced).toList();
-  }
-
-  // Get failed transactions
-  List<TransactionModel> get failedTransactions {
-    return _transactions.where((t) => t.syncStatus == SyncStatus.failed).toList();
-  }
-
-  // Debug method to see sync status of all transactions
-  void debugSyncStatus() {
-    debugPrint('=== SYNC STATUS DEBUG ===');
-    debugPrint('Total transactions: ${_transactions.length}');
-    
-    for (int i = 0; i < _transactions.length; i++) {
-      final transaction = _transactions[i];
-      debugPrint('Transaction ${i + 1}:');
-      debugPrint('  ID: ${transaction.id}');
-      debugPrint('  Title: ${transaction.title}');
-      debugPrint('  Amount: ${transaction.amount}');
-      debugPrint('  Sync Status: ${transaction.syncStatus}');
-      debugPrint('  Sync Attempts: ${transaction.syncAttempts}');
-      if (transaction.syncError != null) {
-        debugPrint('  Sync Error: ${transaction.syncError}');
-      }
-      debugPrint('---');
-    }
-    
-    debugPrint('Unsynced transactions: ${unsyncedTransactions.length}');
-    debugPrint('Failed transactions: ${failedTransactions.length}');
-    debugPrint('========================');
-  }
-
-  // Quick fix: Mark all pending transactions as synced (for existing data)
-  Future<void> markAllAsSynced() async {
-    for (final transaction in _transactions) {
-      if (transaction.syncStatus == SyncStatus.pending) {
-        final syncedTransaction = transaction.copyWith(
-          syncStatus: SyncStatus.synced,
-          syncAttempts: 0,
-          syncError: null,
-        );
-        await _syncService.updateTransaction(syncedTransaction);
-        
-        // Update in local list
-        final index = _transactions.indexWhere((t) => t.id == transaction.id);
-        if (index >= 0) {
-          _transactions[index] = syncedTransaction;
-        }
-      }
-    }
+  
+  // Clear all transactions
+  void clearTransactions() {
+    _transactions.clear();
     notifyListeners();
   }
   
-  // Force sync all pending transactions
-  Future<void> forceSyncAllPending() async {
-    await _syncService.forceSyncAllPending();
-    // Reload transactions after sync
-    await loadTransactions(_transactions.isNotEmpty ? _transactions.first.userId : '');
+  // Clear error
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 }

@@ -29,7 +29,7 @@ class AppRoutes {
   static const String accountSettings = '/settings/account';
   static const String currencySettings = '/settings/currency';
   static const String notificationsSettings = '/settings/notifications';
-  static const String backupSyncSettings = '/settings/backup-sync';
+  // Removed backup sync route
   static const String privacySecuritySettings = '/settings/privacy-security';
   static const String appPreferencesSettings = '/settings/app-preferences';
   static const String helpSupportSettings = '/settings/help-support';

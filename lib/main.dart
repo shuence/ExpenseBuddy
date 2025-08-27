@@ -6,7 +6,7 @@ import 'firebase_options.dart';
 import 'app.dart';
 import 'services/theme_service.dart';
 import 'services/service_initializer.dart';
-import 'services/timer_background_sync_service.dart';
+// Removed sync services
 
 void main() async {
   try {
@@ -23,20 +23,8 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     
-    // Initialize Timer-based Background Sync Service
-    try {
-      await TimerBackgroundSyncService().initialize();
-      debugPrint('Timer background sync service initialized successfully');
-    } catch (e) {
-      debugPrint('Timer background sync initialization failed: $e');
-      // Continue without background sync for now
-    }
-    
-    // Initialize other services (sync, etc.)
-    await ServiceInitializer().initialize();
-    
-    // Trigger initial sync if online
-    await ServiceInitializer().triggerInitialSync();
+      // Initialize other services
+  await ServiceInitializer().initialize();
     
     runApp(const ExpenseBuddyApp());
   } catch (e) {

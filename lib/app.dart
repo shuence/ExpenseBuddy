@@ -40,20 +40,24 @@ class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> with WidgetsBindingOb
     super.didChangeAppLifecycleState(state);
     
     if (state == AppLifecycleState.resumed) {
-      // App came to foreground - trigger sync if online
+      // App came to foreground - trigger sync
       _triggerForegroundSync();
     }
   }
 
   Future<void> _triggerForegroundSync() async {
     try {
+      debugPrint('🔄 App came to foreground - triggering sync...');
       final syncService = SyncService();
-      if (syncService.isSyncing) return; // Don't trigger if already syncing
       
-      // Trigger a quick sync when app comes to foreground
-      await syncService.syncNow();
+      if (!syncService.isSyncing) {
+        await syncService.syncNow();
+        debugPrint('✅ Foreground sync completed');
+      } else {
+        debugPrint('⚠️ Sync already in progress, skipping foreground sync');
+      }
     } catch (e) {
-      print('Failed to trigger foreground sync: $e');
+      debugPrint('❌ Failed to trigger foreground sync: $e');
     }
   }
 

@@ -14,8 +14,8 @@ import 'widgets/settings_section.dart';
 import 'widgets/settings_item.dart';
 import 'widgets/sign_out_button.dart';
 import 'widgets/version_info.dart';
-import '../settings/sync_settings_screen.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../services/sync_service.dart';
 import '../../../ui/widgets/sync_status_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -53,6 +53,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _refreshData() async {
     await _loadUserPreferences();
+  }
+
+  Future<void> _triggerManualSync() async {
+    try {
+      debugPrint('🔄 Manual sync triggered from profile screen');
+      final syncService = SyncService();
+      
+      if (!syncService.isSyncing) {
+        await syncService.syncNow();
+        debugPrint('✅ Manual sync completed');
+        
+        // Show success message
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Sync Complete'),
+              content: const Text('Your data has been synced successfully!'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        debugPrint('⚠️ Sync already in progress');
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Sync in Progress'),
+              content: const Text('A sync is already running. Please wait for it to complete.'),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Manual sync failed: $e');
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Sync Failed'),
+            content: Text('Failed to sync data: $e'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   String _getCurrencyDisplay() {
@@ -201,60 +264,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 context.push(AppRoutes.notificationsSettings);
                               },
                             ),
-                            Consumer<TransactionProvider>(
-                              builder: (context, transactionProvider, child) {
-                                final unsyncedCount = transactionProvider.unsyncedTransactions.length;
-                                final failedCount = transactionProvider.failedTransactions.length;
-                                
-                                String subtitle = 'Manage offline sync and data backup';
-                                if (unsyncedCount > 0 || failedCount > 0) {
-                                  subtitle = '$unsyncedCount pending, $failedCount failed';
-                                }
-                                
-                                return SettingsItem(
-                                  icon: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: CupertinoColors.activeBlue,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(
-                                      CupertinoIcons.arrow_clockwise,
-                                      color: CupertinoColors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  title: 'Backup & Sync',
-                                  subtitle: subtitle,
-                                  trailing: (unsyncedCount > 0 || failedCount > 0)
-                                      ? Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: failedCount > 0 
-                                                ? CupertinoColors.systemRed 
-                                                : CupertinoColors.systemOrange,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            '${unsyncedCount + failedCount}',
-                                            style: const TextStyle(
-                                              color: CupertinoColors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        )
-                                      : null,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      CupertinoPageRoute(
-                                        builder: (context) => const SyncSettingsScreen(),
-                                      ),
-                                    );
-                                  },
-                                );
+                            // Sync Section
+                            SettingsItem(
+                              icon: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors.activeBlue,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  CupertinoIcons.arrow_clockwise,
+                                  color: CupertinoColors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              title: 'Sync Data',
+                              subtitle: 'Sync transactions between devices',
+                              trailing: const SyncStatusWidget(size: 20),
+                              onTap: () {
+                                _triggerManualSync();
                               },
                             ),
                           ],

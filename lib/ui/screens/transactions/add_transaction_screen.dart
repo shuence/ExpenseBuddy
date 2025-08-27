@@ -347,7 +347,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         category: _selectedCategory,
         date: _selectedDate,
         description: _descriptionController.text.trim().isEmpty
-            ? null
+            ? ''
             : _descriptionController.text.trim(),
         userId: userId,
         currency: _selectedCurrency,

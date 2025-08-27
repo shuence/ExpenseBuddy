@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import '../../services/user_service.dart';
 import '../../models/user_model.dart';
 import 'connectivity_status_widget.dart';
+import 'sync_status_widget.dart';
 
 class HomeHeader extends StatefulWidget {
   final UserModel? currentUser;
@@ -53,13 +54,19 @@ class _HomeHeaderState extends State<HomeHeader> {
               ),
             ),
             
-            // Right side: Connectivity Icon and User Avatar
+            // Right side: Connectivity Icon, Sync Status, and User Avatar
             Row(
               children: [
                 // Connectivity Status Icon
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   child: const ConnectivityStatusWidget(size: 16, showBackground: true),
+                ),
+                
+                // Sync Status Icon
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: const SyncStatusWidget(size: 16, showBackground: true),
                 ),
                 
                 // User Avatar

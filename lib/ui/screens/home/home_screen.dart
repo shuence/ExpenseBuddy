@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/responsive_constants.dart';
 import '../../../models/user_model.dart';
+import '../../../models/transaction_model.dart';
 import '../../../services/user_service.dart';
 import '../../../services/user_preferences_service.dart';
 import '../../../providers/transaction_provider.dart';
@@ -77,11 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
               budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
             ]);
 
-            // Trigger sync when home screen loads (if online)
+            // Load transactions from local database
             try {
-              await transactionProvider.fetchFirebaseData();
+              await transactionProvider.loadTransactions(user.uid);
             } catch (e) {
-              debugPrint('Failed to fetch Firebase data on home load: $e');
+              debugPrint('Failed to load transactions on home load: $e');
             }
           }
       }
@@ -95,22 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    // Trigger sync first, then load user data
-    try {
-      if (_currentUser != null) {
-        final transactionProvider = Provider.of<TransactionProvider>(
-          context,
-          listen: false,
-        );
-        
-        // Trigger full sync on pull-to-refresh
-        await transactionProvider.fullSync();
-      }
-    } catch (e) {
-      debugPrint('Failed to sync on refresh: $e');
-    }
-    
-    // Then load user data
+    // Reload user data on pull-to-refresh
     await _loadUserData();
   }
 
@@ -137,18 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Consumer<TransactionProvider>(
                   builder: (context, transactionProvider, child) {
                     // Calculate financial stats from transactions
-                    final totalIncome = transactionProvider.getTotalIncome(
-                      _userCurrency,
-                    );
-                    final totalExpenses = transactionProvider.getTotalExpenses(
-                      _userCurrency,
-                    );
-                    final balance = transactionProvider.getBalance(
-                      _userCurrency,
-                    );
-                    final savings =
-                        totalIncome -
-                        totalExpenses; // This could be more sophisticated
+                    final totalIncome = transactionProvider.getTotalAmountByType(TransactionType.income);
+                    final totalExpenses = transactionProvider.getTotalAmountByType(TransactionType.expense);
+                    final balance = totalIncome - totalExpenses;
+                    final savings = balance; // This could be more sophisticated
 
                     // Get recent transactions (limit to 3)
                     final recentTransactions = transactionProvider.transactions

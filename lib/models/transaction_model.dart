@@ -1,34 +1,22 @@
-import 'package:equatable/equatable.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 enum TransactionType {
-  expense,
   income,
+  expense,
 }
 
-enum SyncStatus {
-  synced,
-  pending,
-  failed,
-}
-
-class TransactionModel extends Equatable {
+class TransactionModel {
   final String id;
   final String title;
   final double amount;
   final String category;
   final DateTime date;
-  final String? description;
+  final String description;
   final String userId;
   final String currency;
   final TransactionType type;
   final DateTime createdAt;
   final DateTime updatedAt;
-  // Sync-related fields
-  final SyncStatus syncStatus;
-  final int syncAttempts;
-  final DateTime? lastSyncAttempt;
-  final String? syncError;
 
   const TransactionModel({
     required this.id,
@@ -36,66 +24,52 @@ class TransactionModel extends Equatable {
     required this.amount,
     required this.category,
     required this.date,
-    this.description,
+    required this.description,
     required this.userId,
     required this.currency,
     required this.type,
     required this.createdAt,
     required this.updatedAt,
-    this.syncStatus = SyncStatus.pending,
-    this.syncAttempts = 0,
-    this.lastSyncAttempt,
-    this.syncError,
   });
 
+  // Create from JSON
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
       id: json['id'] as String,
       title: json['title'] as String,
-      amount: json['amount'] as double,
+      amount: (json['amount'] as num).toDouble(),
       category: json['category'] as String,
-      date: _parseDateTime(json['date']),
-      description: json['description'] as String?,
+      date: DateTime.fromMillisecondsSinceEpoch(json['date'] as int),
+      description: json['description'] as String? ?? '',
       userId: json['userId'] as String,
       currency: json['currency'] as String,
       type: TransactionType.values.firstWhere(
-        (e) => e.toString() == 'TransactionType.${json['type']}',
+        (e) => e.toString().split('.').last == json['type'],
         orElse: () => TransactionType.expense,
       ),
-      createdAt: _parseDateTime(json['createdAt']),
-      updatedAt: _parseDateTime(json['updatedAt']),
-      syncStatus: SyncStatus.values.firstWhere(
-        (e) => e.toString() == 'SyncStatus.${json['syncStatus'] ?? 'pending'}',
-        orElse: () => SyncStatus.pending,
-      ),
-      syncAttempts: json['syncAttempts'] as int? ?? 0,
-      lastSyncAttempt: json['lastSyncAttempt'] != null 
-          ? _parseDateTime(json['lastSyncAttempt']) 
-          : null,
-      syncError: json['syncError'] as String?,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int),
     );
   }
 
+  // Convert to JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
       'amount': amount,
       'category': category,
-      'date': date.toIso8601String(),
+      'date': date.millisecondsSinceEpoch,
       'description': description,
       'userId': userId,
       'currency': currency,
       'type': type.toString().split('.').last,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'syncStatus': syncStatus.toString().split('.').last,
-      'syncAttempts': syncAttempts,
-      'lastSyncAttempt': lastSyncAttempt?.toIso8601String(),
-      'syncError': syncError,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
   }
 
+  // Create a copy with some fields changed
   TransactionModel copyWith({
     String? id,
     String? title,
@@ -108,10 +82,6 @@ class TransactionModel extends Equatable {
     TransactionType? type,
     DateTime? createdAt,
     DateTime? updatedAt,
-    SyncStatus? syncStatus,
-    int? syncAttempts,
-    DateTime? lastSyncAttempt,
-    String? syncError,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -125,52 +95,45 @@ class TransactionModel extends Equatable {
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      syncStatus: syncStatus ?? this.syncStatus,
-      syncAttempts: syncAttempts ?? this.syncAttempts,
-      lastSyncAttempt: lastSyncAttempt ?? this.lastSyncAttempt,
-      syncError: syncError ?? this.syncError,
     );
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    title,
-    amount,
-    category,
-    date,
-    description,
-    userId,
-    currency,
-    type,
-    createdAt,
-    updatedAt,
-    syncStatus,
-    syncAttempts,
-    lastSyncAttempt,
-    syncError,
-  ];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is TransactionModel &&
+        other.id == id &&
+        other.title == title &&
+        other.amount == amount &&
+        other.category == category &&
+        other.date == date &&
+        other.description == description &&
+        other.userId == userId &&
+        other.currency == currency &&
+        other.type == type &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
 
-  // Helper method to parse DateTime from various formats
-  static DateTime _parseDateTime(dynamic dateValue) {
-    if (dateValue is DateTime) {
-      return dateValue;
-    } else if (dateValue is String) {
-      try {
-        return DateTime.parse(dateValue);
-      } catch (e) {
-        // If parsing fails, return current time
-        return DateTime.now();
-      }
-    } else if (dateValue is int) {
-      // Handle timestamp in milliseconds
-      return DateTime.fromMillisecondsSinceEpoch(dateValue);
-    } else if (dateValue is Timestamp) {
-      // Handle Firestore Timestamp objects
-      return dateValue.toDate();
-    } else {
-      // Fallback to current time
-      return DateTime.now();
-    }
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      title,
+      amount,
+      category,
+      date,
+      description,
+      userId,
+      currency,
+      type,
+      createdAt,
+      updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'TransactionModel(id: $id, title: $title, amount: $amount, category: $category, date: $date, type: $type)';
   }
 }
