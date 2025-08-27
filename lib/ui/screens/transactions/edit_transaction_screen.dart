@@ -218,6 +218,91 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
   }
 
+  Widget _buildFormSection(BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: CupertinoColors.systemGrey5.resolveFrom(context),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.systemGrey4.resolveFrom(context).withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: CupertinoColors.systemGrey,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    final day = date.day;
+    final month = months[date.month - 1];
+    final year = date.year;
+    
+    // Add ordinal suffix to day
+    String daySuffix;
+    if (day >= 11 && day <= 13) {
+      daySuffix = 'th';
+    } else {
+      switch (day % 10) {
+        case 1:
+          daySuffix = 'st';
+          break;
+        case 2:
+          daySuffix = 'nd';
+          break;
+        case 3:
+          daySuffix = 'rd';
+          break;
+        default:
+          daySuffix = 'th';
+      }
+    }
+    
+    return '$day$daySuffix $month, $year';
+  }
+
   void _deleteTransaction() {
     showCupertinoDialog(
       context: context,
@@ -266,10 +351,13 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isIncome = _selectedType == TransactionType.income;
+    final typeColor = isIncome ? CupertinoColors.systemGreen : CupertinoColors.systemRed;
+    
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(
-          'Edit Transaction',
+          isIncome ? 'Edit Income' : 'Edit Expense',
           style: TextStyle(
             color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
             fontWeight: FontWeight.w600,
@@ -316,171 +404,188 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
-              // Transaction Type Selector
+              // Transaction Type Indicator
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6.resolveFrom(context),
-                  borderRadius: BorderRadius.circular(8),
+                  color: typeColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: typeColor.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
-                child: CupertinoSlidingSegmentedControl<TransactionType>(
-                  groupValue: _selectedType,
-                  children: const {
-                    TransactionType.expense: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('Expense'),
+                child: Row(
+                  children: [
+                    Icon(
+                      isIncome ? CupertinoIcons.arrow_up_circle_fill : CupertinoIcons.arrow_down_circle_fill,
+                      color: typeColor,
+                      size: 24,
                     ),
-                    TransactionType.income: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('Income'),
+                    const SizedBox(width: 12),
+                    Text(
+                      isIncome ? 'Income Transaction' : 'Expense Transaction',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: typeColor,
+                      ),
                     ),
-                  },
-                  onValueChanged: (TransactionType? value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedType = value;
-                        // Reset category when type changes
-                        _selectedCategory = value == TransactionType.expense 
-                            ? AppConstants.expenseCategories.first
-                            : AppConstants.incomeCategories.first;
-                      });
-                    }
-                  },
+                  ],
                 ),
               ),
 
               // Title Field
-              CupertinoFormSection(
-                header: const Text('Title'),
-                children: [
-                  CupertinoTextFormFieldRow(
-                    controller: _titleController,
-                    placeholder: 'Enter title',
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.textformat,
+                title: 'Title',
+                child: CupertinoTextField(
+                  controller: _titleController,
+                  placeholder: 'Enter transaction title',
+                  decoration: const BoxDecoration(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
               ),
 
               const SizedBox(height: 16),
 
               // Amount Field
-              CupertinoFormSection(
-                header: const Text('Amount'),
-                children: [
-                  CupertinoTextFormFieldRow(
-                    controller: _amountController,
-                    placeholder: '0.00',
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter an amount';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Please enter a valid number';
-                      }
-                      if (double.parse(value) <= 0) {
-                        return 'Amount must be greater than 0';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.money_dollar_circle,
+                title: 'Amount',
+                child: CupertinoTextField(
+                  controller: _amountController,
+                  placeholder: '0.00',
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const BoxDecoration(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
               ),
 
               const SizedBox(height: 16),
 
               // Category Field
-              CupertinoFormSection(
-                header: const Text('Category'),
-                children: [
-                  GestureDetector(
-                    onTap: _showCategoryPicker,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_selectedCategory),
-                          const Icon(
-                            CupertinoIcons.chevron_right,
-                            color: CupertinoColors.systemGrey,
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.tag,
+                title: 'Category',
+                child: GestureDetector(
+                  onTap: _showCategoryPicker,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedCategory,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
                           ),
-                        ],
-                      ),
+                        ),
+                        const Icon(
+                          CupertinoIcons.chevron_right,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
 
               const SizedBox(height: 16),
 
               // Date Field
-              CupertinoFormSection(
-                header: const Text('Date'),
-                children: [
-                  GestureDetector(
-                    onTap: _showDatePicker,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                          ),
-                          const Icon(
-                            CupertinoIcons.chevron_right,
-                            color: CupertinoColors.systemGrey,
-                          ),
-                        ],
-                      ),
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.calendar,
+                title: 'Date',
+                child: GestureDetector(
+                  onTap: _showDatePicker,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDate(_selectedDate),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Tap to change date',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Icon(
+                          CupertinoIcons.chevron_right,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
 
               const SizedBox(height: 16),
 
               // Currency Field
-              CupertinoFormSection(
-                header: const Text('Currency'),
-                children: [
-                  GestureDetector(
-                    onTap: _showCurrencyPicker,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_selectedCurrency),
-                          const Icon(
-                            CupertinoIcons.chevron_right,
-                            color: CupertinoColors.systemGrey,
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.money_dollar_circle,
+                title: 'Currency',
+                child: GestureDetector(
+                  onTap: _showCurrencyPicker,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedCurrency,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
                           ),
-                        ],
-                      ),
+                        ),
+                        const Icon(
+                          CupertinoIcons.chevron_right,
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
 
               const SizedBox(height: 16),
 
               // Description Field
-              CupertinoFormSection(
-                header: const Text('Description (Optional)'),
-                children: [
-                  CupertinoTextFormFieldRow(
-                    controller: _descriptionController,
-                    placeholder: 'Enter description',
-                    maxLines: 3,
-                  ),
-                ],
+              _buildFormSection(
+                context,
+                icon: CupertinoIcons.doc_text,
+                title: 'Description (Optional)',
+                child: CupertinoTextField(
+                  controller: _descriptionController,
+                  placeholder: 'Enter description',
+                  maxLines: 3,
+                  decoration: const BoxDecoration(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
               ),
             ],
           ),

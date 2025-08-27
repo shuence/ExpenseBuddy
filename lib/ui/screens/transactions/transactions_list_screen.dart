@@ -7,9 +7,8 @@ import '../../../providers/transaction_provider.dart';
 import '../../../services/user_service.dart';
 import '../../../utils/currency_utils.dart';
 import '../../../router/routes.dart';
-import 'transaction_details_screen.dart';
 
-enum TransactionFilter { all, income, expense }
+enum TransactionFilter { all, income, expenses, transfer }
 
 class TransactionsListScreen extends StatefulWidget {
   const TransactionsListScreen({super.key});
@@ -53,8 +52,13 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
       case TransactionFilter.income:
         filtered = provider.income;
         break;
-      case TransactionFilter.expense:
+      case TransactionFilter.expenses:
         filtered = provider.expenses;
+        break;
+      case TransactionFilter.transfer:
+        filtered = provider.transactions
+            .where((t) => t.category.toLowerCase().contains('transfer'))
+            .toList();
         break;
     }
     
@@ -64,12 +68,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
   }
 
   void _onTransactionTap(TransactionModel transaction) {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => TransactionDetailsScreen(transaction: transaction),
-      ),
-    );
+    context.push(AppRoutes.transactionDetails, extra: transaction);
   }
 
   Future<void> _refreshTransactions() async {
@@ -117,7 +116,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Text('All'),
                 ),
-                TransactionFilter.expense: Padding(
+                TransactionFilter.expenses: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text('Expenses'),
                   ),  
@@ -192,9 +191,13 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                         filterText = 'income';
                         iconData = CupertinoIcons.arrow_up_circle;
                         break;
-                      case TransactionFilter.expense:
+                      case TransactionFilter.expenses:
                         filterText = 'expenses';
                         iconData = CupertinoIcons.arrow_down_circle;
+                        break;
+                      case TransactionFilter.transfer:
+                        filterText = 'transfers';
+                        iconData = CupertinoIcons.arrow_right_arrow_left;
                         break;
                     }
                     

@@ -1,4 +1,3 @@
-import 'package:expensebuddy/router/routes.dart';
 import 'package:expensebuddy/services/user_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
@@ -414,7 +413,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         border: null,
         leading: CupertinoNavigationBarBackButton(
           color: AppTheme.getPrimaryColor(CupertinoTheme.brightnessOf(context)),
-          onPressed: () =>context.push(AppRoutes.transactions),
+          onPressed: () =>context.pop(),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,

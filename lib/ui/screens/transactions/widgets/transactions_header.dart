@@ -6,11 +6,13 @@ import 'transaction_menu.dart';
 class TransactionsHeader extends StatelessWidget {
   final String title;
   final VoidCallback? onSearchTap;
+  final VoidCallback? onFilterTap;
 
   const TransactionsHeader({
     super.key,
     this.title = 'Transactions',
     this.onSearchTap,
+    this.onFilterTap,
   });
 
   void _onMenuPressed(BuildContext context) {
@@ -22,7 +24,10 @@ class TransactionsHeader extends StatelessWidget {
 
   void _onSearchPressed() {
     onSearchTap?.call();
-    // Implement search functionality
+  }
+
+  void _onFilterPressed() {
+    onFilterTap?.call();
   }
 
   @override
@@ -47,7 +52,7 @@ class TransactionsHeader extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: ResponsiveConstants.fontSize24,
+                    fontSize: ResponsiveConstants.fontSize20,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.getTextPrimaryColor(brightness),
                     letterSpacing: -0.5,
@@ -69,6 +74,37 @@ class TransactionsHeader extends StatelessWidget {
           // Action Buttons
           Row(
             children: [
+              // Filter Button
+              GestureDetector(
+                onTap: _onFilterPressed,
+                child: Container(
+                  width: ResponsiveConstants.containerHeight48,
+                  height: ResponsiveConstants.containerHeight48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.getSurfaceColor(brightness),
+                    borderRadius: BorderRadius.circular(ResponsiveConstants.radius16),
+                    border: Border.all(
+                      color: AppTheme.getPrimaryColor(brightness).withOpacity(0.1),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.getPrimaryColor(brightness).withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    CupertinoIcons.slider_horizontal_3,
+                    color: AppTheme.getPrimaryColor(brightness),
+                    size: ResponsiveConstants.iconSize20,
+                  ),
+                ),
+              ),
+              
+              SizedBox(width: ResponsiveConstants.spacing12),
+              
               // Search Button
               GestureDetector(
                 onTap: _onSearchPressed,

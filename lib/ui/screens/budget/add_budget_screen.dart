@@ -416,8 +416,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                 
                 SizedBox(height: ResponsiveConstants.spacing40),
                 
-                // Save Button at Bottom
-                Container(
+                SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: CupertinoButton(

@@ -14,6 +14,7 @@ import '../../widgets/balance_card.dart';
 import '../../widgets/overview_stats.dart';
 import '../../widgets/recent_transactions.dart';
 import '../transactions/transaction_details_screen.dart';
+import '../transactions/widgets/floating_add_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,7 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
   final UserService _userService = UserService();
-  final UserPreferencesService _userPreferencesService = UserPreferencesService();
+  final UserPreferencesService _userPreferencesService =
+      UserPreferencesService();
   String _userCurrency = 'USD'; // Default currency
 
   @override
@@ -39,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final user = await _userService.getCurrentUser();
       String userCurrency = 'USD'; // Default
-      
+
       if (user != null) {
         try {
           userCurrency = await _userPreferencesService.getUserDefaultCurrency();
@@ -47,19 +49,25 @@ class _HomeScreenState extends State<HomeScreen> {
           print('Error loading user currency: $e');
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _currentUser = user;
           _userCurrency = userCurrency;
           _isLoading = false;
         });
-        
+
         // Load transactions and budgets for this user
         if (user != null && mounted) {
-          final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
-          final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
-          
+          final transactionProvider = Provider.of<TransactionProvider>(
+            context,
+            listen: false,
+          );
+          final budgetProvider = Provider.of<BudgetProvider>(
+            context,
+            listen: false,
+          );
+
           // Load data in parallel
           await Future.wait([
             transactionProvider.loadTransactions(user.uid),
@@ -76,93 +84,127 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await _loadUserData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.getBackgroundColor(CupertinoTheme.brightnessOf(context)),
+        color: AppTheme.getBackgroundColor(
+          CupertinoTheme.brightnessOf(context),
+        ),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveConstants.spacing16,
-            vertical: ResponsiveConstants.spacing12,
-          ),
-          child: Consumer<TransactionProvider>(
-            builder: (context, transactionProvider, child) {
-              // Calculate financial stats from transactions
-              final totalIncome = transactionProvider.getTotalIncome(_userCurrency);
-              final totalExpenses = transactionProvider.getTotalExpenses(_userCurrency);
-              final balance = transactionProvider.getBalance(_userCurrency);
-              final savings = totalIncome - totalExpenses; // This could be more sophisticated
-              
-              // Get recent transactions (limit to 3)
-              final recentTransactions = transactionProvider.transactions.take(3).toList();
-              
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Greeting Section
-                  GreetingSection(
-                    currentUser: _currentUser,
-                    isLoading: _isLoading,
-                    userService: _userService,
-                  ),
-                  
-                  SizedBox(height: ResponsiveConstants.spacing20),
-                  
-                  // Total Balance Card
-                  BalanceCard(
-                    balance: balance,
-                    currency: _userCurrency,
-                  ),
-                  
-                  SizedBox(height: ResponsiveConstants.spacing20),
-                  
-                  // Overview Stats (Income, Expenses, Savings)
-                  OverviewStats(
-                    income: totalIncome,
-                    expenses: totalExpenses,
-                    savings: savings,
-                    currency: _userCurrency,
-                  ),
-                  
-                  SizedBox(height: ResponsiveConstants.spacing24),
-                  
-                  // Navigation Buttons Section
-                  _buildNavigationButtons(context),
-                  
-                  SizedBox(height: ResponsiveConstants.spacing24),
-                  
-                  // Recent Transactions Section
-                  if (transactionProvider.isLoading)
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: ResponsiveConstants.spacing24),
-                        child: const CupertinoActivityIndicator(),
-                      ),
-                    )
-                  else
-                    RecentTransactions(
-                      transactions: recentTransactions,
-                      onSeeAllPressed: () {
-                        context.push(AppRoutes.transactions);
-                      },
-                      onTransactionTap: (transaction) {
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (context) => TransactionDetailsScreen(transaction: transaction),
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+            CupertinoSliverRefreshControl(onRefresh: _refreshData),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveConstants.spacing16,
+                  vertical: ResponsiveConstants.spacing12,
+                ),
+                child: Consumer<TransactionProvider>(
+                  builder: (context, transactionProvider, child) {
+                    // Calculate financial stats from transactions
+                    final totalIncome = transactionProvider.getTotalIncome(
+                      _userCurrency,
+                    );
+                    final totalExpenses = transactionProvider.getTotalExpenses(
+                      _userCurrency,
+                    );
+                    final balance = transactionProvider.getBalance(
+                      _userCurrency,
+                    );
+                    final savings =
+                        totalIncome -
+                        totalExpenses; // This could be more sophisticated
+
+                    // Get recent transactions (limit to 3)
+                    final recentTransactions = transactionProvider.transactions
+                        .take(3)
+                        .toList();
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Greeting Section
+                        GreetingSection(
+                          currentUser: _currentUser,
+                          isLoading: _isLoading,
+                          userService: _userService,
+                        ),
+
+                        SizedBox(height: ResponsiveConstants.spacing20),
+
+                        // Total Balance Card
+                        BalanceCard(balance: balance, currency: _userCurrency),
+
+                        SizedBox(height: ResponsiveConstants.spacing20),
+
+                        // Overview Stats (Income, Expenses, Savings)
+                        OverviewStats(
+                          income: totalIncome,
+                          expenses: totalExpenses,
+                          savings: savings,
+                          currency: _userCurrency,
+                        ),
+
+                        SizedBox(height: ResponsiveConstants.spacing24),
+
+                        // Navigation Buttons Section
+                        _buildNavigationButtons(context),
+
+                        SizedBox(height: ResponsiveConstants.spacing24),
+
+                        // Recent Transactions Section
+                        if (transactionProvider.isLoading)
+                          Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: ResponsiveConstants.spacing24,
+                              ),
+                              child: const CupertinoActivityIndicator(),
+                            ),
+                          )
+                        else
+                          RecentTransactions(
+                            transactions: recentTransactions,
+                            onSeeAllPressed: () {
+                              context.push(AppRoutes.transactions);
+                            },
+                            onTransactionTap: (transaction) {
+                              Navigator.push(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (context) =>
+                                      TransactionDetailsScreen(
+                                        transaction: transaction,
+                                      ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  
-                  SizedBox(height: ResponsiveConstants.spacing80), // Bottom padding for nav bar
-                ],
-              );
-            },
-          ),
+
+                        SizedBox(
+                          height: ResponsiveConstants.spacing80,
+                        ), // Bottom padding for nav bar
+                      ],
+                    );
+                  },
+                ),
+              ),
+            )
+            ],
+            ),
+            
+            // Floating Add Button
+            const FloatingAddButton(),
+          ],
         ),
       ),
     );
@@ -221,7 +263,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.systemGrey4.resolveFrom(context).withOpacity(0.2),
+              color: CupertinoColors.systemGrey4
+                  .resolveFrom(context)
+                  .withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -230,18 +274,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: const Color(0xFF2ECC71),
-            ),
+            Icon(icon, size: 32, color: const Color(0xFF2ECC71)),
             SizedBox(height: ResponsiveConstants.spacing8),
             Text(
               title,
               style: TextStyle(
                 fontSize: ResponsiveConstants.fontSize16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.getTextPrimaryColor(CupertinoTheme.brightnessOf(context)),
+                color: AppTheme.getTextPrimaryColor(
+                  CupertinoTheme.brightnessOf(context),
+                ),
               ),
             ),
             SizedBox(height: ResponsiveConstants.spacing4),

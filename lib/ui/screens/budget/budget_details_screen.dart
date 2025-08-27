@@ -52,6 +52,10 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await _loadUserPreferences();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -75,6 +79,9 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
           ? const Center(child: CupertinoActivityIndicator(radius: 16))
           : CustomScrollView(
               slivers: [
+                CupertinoSliverRefreshControl(
+                  onRefresh: _refreshData,
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(

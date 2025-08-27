@@ -47,6 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _refreshData() async {
+    await _loadUserPreferences();
+  }
+
   String _getCurrencyDisplay() {
     if (_userPreferences?.defaultCurrency != null) {
       // Find currency info
@@ -86,8 +90,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             debugPrint('ProfileScreen: User displayName: ${user?.displayName}');
             debugPrint('ProfileScreen: User email: ${user?.email}');
             
-            return SingleChildScrollView(
-              child: Column(
+            return CustomScrollView(
+              slivers: [
+                CupertinoSliverRefreshControl(
+                  onRefresh: _refreshData,
+                ),
+                SliverToBoxAdapter(
+                  child: Column(
                 children: [
                   // Profile Header
                   GestureDetector(
@@ -315,10 +324,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
+            ),
+          ],
             );
-          },
+          }
         ),
       ),
     );
-  }
+  } 
 }

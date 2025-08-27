@@ -10,7 +10,9 @@ import '../ui/screens/auth/email_auth_screen.dart';
 import '../ui/screens/auth/forgot_password_screen.dart';
 import '../ui/screens/transactions/add_transaction_screen.dart';
 import '../ui/screens/transactions/transactions_list_screen.dart';
+import '../ui/screens/transactions/transaction_details_screen.dart';
 import '../ui/screens/budget/budget_screen.dart';
+import '../models/transaction_model.dart';
 import 'routes.dart';
 import '../ui/screens/main/main_navigation_screen.dart';
 import '../models/onboarding_model.dart';
@@ -92,6 +94,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.transactions,
         builder: (context, state) => const TransactionsListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.transactionDetails,
+        builder: (context, state) {
+          final transaction = state.extra as TransactionModel;
+          return TransactionDetailsScreen(transaction: transaction);
+        },
       ),
       GoRoute(
         path: AppRoutes.budget,
