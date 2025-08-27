@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
-import '../data/local/local_database_service.dart';
 import '../data/remote/transactions_service.dart';
+import '../services/sync_service.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionsService _transactionsService = TransactionsService();
@@ -102,28 +102,6 @@ class TransactionProvider extends ChangeNotifier {
       debugPrint('🚨 [PROVIDER] _syncService instance: $_syncService');
       debugPrint('🚨 [PROVIDER] _syncService runtimeType: ${_syncService.runtimeType}');
       debugPrint('🚨 [PROVIDER] _syncService is SyncService: ${_syncService is SyncService}');
-      
-      // Direct test call to see if sync service works
-      debugPrint('🚨 [PROVIDER] Making direct test call to sync service...');
-      try {
-        final testTransaction = TransactionModel(
-          id: 'direct-test-${DateTime.now().millisecondsSinceEpoch}',
-          title: 'Direct Test',
-          amount: 999,
-          category: 'Test',
-          date: DateTime.now(),
-          description: 'Direct test description',
-          userId: transaction.userId,
-          currency: 'USD',
-          type: TransactionType.expense,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await _syncService.addTransaction(testTransaction);
-        debugPrint('🚨 [PROVIDER] Direct test call SUCCESSFUL!');
-      } catch (e) {
-        debugPrint('🚨 [PROVIDER] Direct test call FAILED: $e');
-      }
       try {
         await _syncService.addTransaction(transaction);
         debugPrint('🚨 [PROVIDER] _syncService.addTransaction completed successfully');
