@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import '../../services/user_service.dart';
+import '../../services/user_preferences_service.dart';
 import '../../models/user_model.dart';
 import 'connectivity_status_widget.dart';
 
@@ -20,6 +21,33 @@ class HomeHeader extends StatefulWidget {
 }
 
 class _HomeHeaderState extends State<HomeHeader> {
+  final UserPreferencesService _preferencesService = UserPreferencesService();
+  String? _profileImageUrl;
+  bool _isLoadingImage = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    try {
+      final imageUrl = await _preferencesService.getProfileImageUrl();
+      if (mounted) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+          _isLoadingImage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingImage = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +87,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                 // Connectivity Status Icon
                 Container(
                   margin: const EdgeInsets.only(right: 12),
-                  child: const ConnectivityStatusWidget(size: 20, showBackground: true),
+                  child: const ConnectivityStatusWidget(size: 20, showBackground: false),
                 ),
                 
                 // User Avatar
@@ -72,15 +100,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: widget.currentUser?.photoURL != null && widget.currentUser!.photoURL!.isNotEmpty
-                        ? Image.network(
-                            widget.currentUser!.photoURL!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildInitialsAvatar();
-                            },
-                          )
-                        : _buildInitialsAvatar(),
+                    child: _buildProfileImage(),
                   ),
                 ),
               ],
@@ -115,6 +135,32 @@ class _HomeHeaderState extends State<HomeHeader> {
       return widget.currentUser!.email.split('@').first;
     }
     return 'User';
+  }
+
+  Widget _buildProfileImage() {
+    if (_isLoadingImage) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: CupertinoColors.systemGrey4,
+        ),
+        child: const Center(
+          child: CupertinoActivityIndicator(radius: 8),
+        ),
+      );
+    }
+
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      return Image.network(
+        _profileImageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildInitialsAvatar();
+        },
+      );
+    }
+
+    return _buildInitialsAvatar();
   }
 
   Widget _buildInitialsAvatar() {

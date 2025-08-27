@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_preferences_model.dart';
 
 class UserPreferencesService {
@@ -88,6 +90,16 @@ class UserPreferencesService {
           .collection(_collection)
           .doc(userId)
           .update(updates);
+      
+      // If default currency is updated, also update SharedPreferences
+      if (updates.containsKey('defaultCurrency')) {
+        try {
+          await saveDefaultCurrencyToPrefs(updates['defaultCurrency']);
+          debugPrint('💾 Updated default currency in SharedPreferences: ${updates['defaultCurrency']}');
+        } catch (e) {
+          debugPrint('❌ Failed to update default currency in SharedPreferences: $e');
+        }
+      }
     } catch (e) {
       throw Exception('Failed to update preferences: $e');
     }
@@ -221,6 +233,76 @@ class UserPreferencesService {
     } catch (e) {
       // Return default currency if anything fails
       return 'USD';
+    }
+  }
+
+  // Save profile image URL to SharedPreferences
+  Future<void> saveProfileImageUrl(String imageUrl) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_image_url', imageUrl);
+    } catch (e) {
+      throw Exception('Failed to save profile image URL: $e');
+    }
+  }
+
+  // Get profile image URL from SharedPreferences
+  Future<String?> getProfileImageUrl() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('profile_image_url');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Save default currency to SharedPreferences
+  Future<void> saveDefaultCurrencyToPrefs(String currency) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('default_currency', currency);
+    } catch (e) {
+      throw Exception('Failed to save default currency: $e');
+    }
+  }
+
+  // Get default currency from SharedPreferences
+  Future<String> getDefaultCurrencyFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('default_currency') ?? 'USD';
+    } catch (e) {
+      return 'USD';
+    }
+  }
+
+  // Save user ID to SharedPreferences
+  Future<void> saveUserIdToPrefs(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', userId);
+    } catch (e) {
+      throw Exception('Failed to save user ID: $e');
+    }
+  }
+
+  // Get user ID from SharedPreferences
+  Future<String?> getUserIdFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('user_id');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Clear all SharedPreferences data
+  Future<void> clearAllPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (e) {
+      throw Exception('Failed to clear preferences: $e');
     }
   }
 }

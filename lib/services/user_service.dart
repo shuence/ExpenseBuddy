@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'dart:convert';
 import '../data/remote/auth_service.dart';
+import 'user_preferences_service.dart';
 // Removed sync service import
 /// UserService provides user data management with intelligent caching strategy.
 /// 
@@ -163,6 +164,19 @@ class UserService {
         await prefs.setString('user_data', jsonEncode(user.toJson()));
         // Update cache timestamp
         await _updateCacheTimestamp();
+        
+        // Save profile image URL to SharedPreferences if available
+        final currentUser = _authService.currentUser;
+        if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+          try {
+            final prefsService = UserPreferencesService();
+            await prefsService.saveProfileImageUrl(currentUser.photoURL!);
+            debugPrint('💾 Saved profile image URL to SharedPreferences on user refresh: ${currentUser.photoURL}');
+          } catch (e) {
+            debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+          }
+        }
+        
         return user;
       }
       
@@ -200,6 +214,15 @@ class UserService {
       
       if (photoURL != null) {
         await currentUser.updatePhotoURL(photoURL);
+        
+        // Save the new profile image URL to SharedPreferences
+        try {
+          final prefsService = UserPreferencesService();
+          await prefsService.saveProfileImageUrl(photoURL);
+          debugPrint('💾 Saved new profile image URL to SharedPreferences: $photoURL');
+        } catch (e) {
+          debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+        }
       }
 
       // Reload the user to get updated information

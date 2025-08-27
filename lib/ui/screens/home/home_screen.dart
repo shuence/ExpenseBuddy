@@ -47,9 +47,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (user != null) {
         try {
-          userCurrency = await _userPreferencesService.getUserDefaultCurrency();
+          // Load currency from SharedPreferences first, then from Firebase
+          userCurrency = await _userPreferencesService.getDefaultCurrencyFromPrefs();
+          if (userCurrency == 'USD') {
+            // Try to get from Firebase if not in SharedPreferences
+            userCurrency = await _userPreferencesService.getUserDefaultCurrency();
+            // Save to SharedPreferences for future use
+            await _userPreferencesService.saveDefaultCurrencyToPrefs(userCurrency);
+          }
+          
+          // Save user ID and profile image URL to SharedPreferences
+          await _userPreferencesService.saveUserIdToPrefs(user.uid);
+          if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+            await _userPreferencesService.saveProfileImageUrl(user.photoURL!);
+          }
         } catch (e) {
-          debugPrint('Error loading user currency: $e');
+          debugPrint('Error loading user preferences: $e');
         }
       }
 
@@ -60,30 +73,30 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = false;
         });
 
-                  // Load transactions and budgets for this user
-          if (user != null && mounted) {
-            final transactionProvider = Provider.of<TransactionProvider>(
-              context,
-              listen: false,
-            );
-            final budgetProvider = Provider.of<BudgetProvider>(
-              context,
-              listen: false,
-            );
+        // Load transactions and budgets for this user
+        if (user != null && mounted) {
+          final transactionProvider = Provider.of<TransactionProvider>(
+            context,
+            listen: false,
+          );
+          final budgetProvider = Provider.of<BudgetProvider>(
+            context,
+            listen: false,
+          );
 
-            // Load data in parallel
-            await Future.wait([
-              transactionProvider.loadTransactions(user.uid),
-              budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
-            ]);
+          // Load data in parallel
+          await Future.wait([
+            transactionProvider.loadTransactions(user.uid),
+            budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
+          ]);
 
-            // Load transactions from local database
-            try {
-              await transactionProvider.loadTransactions(user.uid);
-            } catch (e) {
-              debugPrint('Failed to load transactions on home load: $e');
-            }
+          // Load transactions from local database
+          try {
+            await transactionProvider.loadTransactions(user.uid);
+          } catch (e) {
+            debugPrint('Failed to load transactions on home load: $e');
           }
+        }
       }
     } catch (e) {
       if (mounted) {

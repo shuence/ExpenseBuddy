@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../router/routes.dart';
+import '../../../../services/user_preferences_service.dart';
 
 class SignOutButton extends StatelessWidget {
   const SignOutButton({super.key});
@@ -78,8 +79,18 @@ class SignOutButton extends StatelessWidget {
             CupertinoDialogAction(
               isDestructiveAction: true,
               child: const Text('Sign Out'),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
+                
+                // Clear SharedPreferences before signing out
+                try {
+                  final prefsService = UserPreferencesService();
+                  await prefsService.clearAllPrefs();
+                  debugPrint('🧹 Cleared all SharedPreferences data');
+                } catch (e) {
+                  debugPrint('❌ Failed to clear SharedPreferences: $e');
+                }
+                
                 context.read<AuthBloc>().add(SignOutRequested());
               },
             ),

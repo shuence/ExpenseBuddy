@@ -87,22 +87,7 @@ class _ConnectivityStatusWidgetState extends State<ConnectivityStatusWidget>
         if (widget.showBackground) {
           return Tooltip(
             message: isConnected ? 'Online - Connected to internet' : 'Offline - No internet connection',
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isConnected 
-                    ? CupertinoColors.systemGreen.withOpacity(0.15)
-                    : CupertinoColors.systemRed.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isConnected 
-                      ? CupertinoColors.systemGreen.withOpacity(0.3)
-                      : CupertinoColors.systemRed.withOpacity(0.5),
-                  width: 1,
-                ),
-              ),
-              child: icon,
-            ),
+            child: icon,
           );
         }
 

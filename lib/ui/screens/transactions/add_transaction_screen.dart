@@ -41,7 +41,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _loadUserDefaultCurrency() async {
     try {
-      final defaultCurrency = await _userPreferencesService.getUserDefaultCurrency();
+      // Try to get currency from SharedPreferences first
+      String defaultCurrency = await _userPreferencesService.getDefaultCurrencyFromPrefs();
+      
+      // If it's still USD (default), try to get from Firebase
+      if (defaultCurrency == 'USD') {
+        defaultCurrency = await _userPreferencesService.getUserDefaultCurrency();
+        // Save to SharedPreferences for future use
+        await _userPreferencesService.saveDefaultCurrencyToPrefs(defaultCurrency);
+      }
+      
       if (mounted) {
         setState(() {
           _selectedCurrency = defaultCurrency;
@@ -182,10 +191,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                    scrollController: FixedExtentScrollController(
                      initialItem: AppConstants.currencies.indexOf(_selectedCurrency),
                    ),
-                   onSelectedItemChanged: (int index) {
+                   onSelectedItemChanged: (int index) async {
+                     final newCurrency = AppConstants.currencies[index];
                      setState(() {
-                       _selectedCurrency = AppConstants.currencies[index];
+                       _selectedCurrency = newCurrency;
                      });
+                     
+                     // Save the new currency to SharedPreferences
+                     try {
+                       await _userPreferencesService.saveDefaultCurrencyToPrefs(newCurrency);
+                       debugPrint('💾 Saved new default currency to SharedPreferences: $newCurrency');
+                     } catch (e) {
+                       debugPrint('❌ Failed to save currency to SharedPreferences: $e');
+                     }
                    },
                    children: AppConstants.currencies.map((currency) => 
                      Center(

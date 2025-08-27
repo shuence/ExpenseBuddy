@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../data/remote/auth_service.dart';
 import '../models/user_model.dart';
 import '../services/user_preferences_service.dart';
@@ -123,6 +124,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithEmailAndPassword(event.email, event.password);
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
+        // Save profile image URL to SharedPreferences if available
+        final currentUser = _authService.currentUser;
+        if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+          try {
+            final preferencesService = UserPreferencesService();
+            await preferencesService.saveProfileImageUrl(currentUser.photoURL!);
+            debugPrint('💾 Saved profile image URL to SharedPreferences on sign in: ${currentUser.photoURL}');
+          } catch (e) {
+            debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+          }
+        }
+        
         // Check if user has preferences set
         final preferencesService = UserPreferencesService();
         final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
@@ -146,6 +159,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.createUserWithEmailAndPassword(event.email, event.password, event.name);
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
+        // Save profile image URL to SharedPreferences if available
+        final currentUser = _authService.currentUser;
+        if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+          try {
+            final preferencesService = UserPreferencesService();
+            await preferencesService.saveProfileImageUrl(currentUser.photoURL!);
+            debugPrint('💾 Saved profile image URL to SharedPreferences on sign up: ${currentUser.photoURL}');
+          } catch (e) {
+            debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+          }
+        }
+        
         // Check if user preferences exist
         final preferencesService = UserPreferencesService();
         final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
@@ -169,6 +194,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithGoogle();
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
+        // Save profile image URL to SharedPreferences if available
+        final currentUser = _authService.currentUser;
+        if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+          try {
+            final preferencesService = UserPreferencesService();
+            await preferencesService.saveProfileImageUrl(currentUser.photoURL!);
+            debugPrint('💾 Saved profile image URL to SharedPreferences on Google sign in: ${currentUser.photoURL}');
+          } catch (e) {
+            debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+          }
+        }
+        
         // Check if user has preferences set
         final preferencesService = UserPreferencesService();
         final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
@@ -192,6 +229,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authService.signInWithApple();
       final userModel = await _authService.getUserModel();
       if (userModel != null) {
+        // Save profile image URL to SharedPreferences if available
+        final currentUser = _authService.currentUser;
+        if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+          try {
+            final preferencesService = UserPreferencesService();
+            await preferencesService.saveProfileImageUrl(currentUser.photoURL!);
+            debugPrint('💾 Saved profile image URL to SharedPreferences on Apple sign in: ${currentUser.photoURL}');
+          } catch (e) {
+            debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+          }
+        }
+        
         // Check if user has preferences set
         final preferencesService = UserPreferencesService();
         final preferencesExist = await preferencesService.preferencesExist(userModel.uid);
@@ -266,6 +315,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user != null) {
         final userModel = await _authService.getUserModel();
         if (userModel != null) {
+          // Save profile image URL to SharedPreferences if available
+          if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+            try {
+              final preferencesService = UserPreferencesService();
+              await preferencesService.saveProfileImageUrl(user.photoURL!);
+              debugPrint('💾 Saved profile image URL to SharedPreferences on auth check: ${user.photoURL}');
+            } catch (e) {
+              debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+            }
+          }
+          
           // Check if user preferences exist
           final preferencesService = UserPreferencesService();
           final preferencesExist = await preferencesService.preferencesExist(userModel.uid);

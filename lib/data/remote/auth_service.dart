@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../../services/firebase_service.dart';
 import '../../services/firebase_messaging_service.dart';
 import '../../services/user_preferences_service.dart';
@@ -24,6 +25,18 @@ class AuthService {
       provider: 'email',
       fcmToken: fcmToken,
     );
+    
+    // Save profile image URL to SharedPreferences if available
+    if (credential.user?.photoURL != null && credential.user!.photoURL!.isNotEmpty) {
+      try {
+        final prefsService = UserPreferencesService();
+        await prefsService.saveProfileImageUrl(credential.user!.photoURL!);
+        debugPrint('💾 Saved profile image URL to SharedPreferences after email sign in: ${credential.user!.photoURL}');
+      } catch (e) {
+        debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+      }
+    }
+    
     return credential;
   }
   
@@ -37,6 +50,18 @@ class AuthService {
       provider: 'email',
       fcmToken: fcmToken,
     );
+    
+    // Save profile image URL to SharedPreferences if available
+    if (credential.user?.photoURL != null && credential.user!.photoURL!.isNotEmpty) {
+      try {
+        final prefsService = UserPreferencesService();
+        await prefsService.saveProfileImageUrl(credential.user!.photoURL!);
+        debugPrint('💾 Saved profile image URL to SharedPreferences after user creation: ${credential.user!.photoURL}');
+      } catch (e) {
+        debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+      }
+    }
+    
     return credential;
   }
   
@@ -66,6 +91,17 @@ class AuthService {
         provider: 'google',
         fcmToken: fcmToken,
       );
+    }
+    
+    // Save profile image URL to SharedPreferences if available
+    if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+      try {
+        final prefsService = UserPreferencesService();
+        await prefsService.saveProfileImageUrl(user.photoURL!);
+        debugPrint('💾 Saved profile image URL to SharedPreferences after Google sign in: ${user.photoURL}');
+      } catch (e) {
+        debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+      }
     }
     
     return credential;
@@ -99,6 +135,17 @@ class AuthService {
       );
     }
     
+    // Save profile image URL to SharedPreferences if available
+    if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+      try {
+        final prefsService = UserPreferencesService();
+        await prefsService.saveProfileImageUrl(user.photoURL!);
+        debugPrint('💾 Saved profile image URL to SharedPreferences after Apple sign in: ${user.photoURL}');
+      } catch (e) {
+        debugPrint('❌ Failed to save profile image URL to SharedPreferences: $e');
+      }
+    }
+    
     return credential;
   }
   
@@ -110,6 +157,17 @@ class AuthService {
   // Update user profile
   Future<void> updateUserProfile({String? displayName, String? photoURL}) async {
     await _firebaseService.updateUserProfile(displayName: displayName, photoURL: photoURL);
+    
+    // Save updated profile image URL to SharedPreferences if provided
+    if (photoURL != null && photoURL.isNotEmpty) {
+      try {
+        final prefsService = UserPreferencesService();
+        await prefsService.saveProfileImageUrl(photoURL);
+        debugPrint('💾 Saved updated profile image URL to SharedPreferences: $photoURL');
+      } catch (e) {
+        debugPrint('❌ Failed to save updated profile image URL to SharedPreferences: $e');
+      }
+    }
   }
   
   // Get user model from Firebase user
