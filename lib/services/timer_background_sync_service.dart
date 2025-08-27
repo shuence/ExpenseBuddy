@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -39,9 +40,9 @@ class TimerBackgroundSyncService {
       });
 
       _isInitialized = true;
-      print('Timer background sync service initialized successfully');
+      debugPrint('Timer background sync service initialized successfully');
     } catch (e) {
-      print('Failed to initialize timer background sync: $e');
+      debugPrint('Failed to initialize timer background sync: $e');
     }
   }
 
@@ -98,9 +99,9 @@ class TimerBackgroundSyncService {
       // Update last sync time
       await setLastSyncTime(DateTime.now());
       
-      print('Timer-based background sync completed successfully');
+      debugPrint('Timer-based background sync completed successfully');
     } catch (e) {
-      print('Timer-based background sync failed: $e');
+      debugPrint('Timer-based background sync failed: $e');
     }
   }
 
@@ -131,7 +132,7 @@ class TimerBackgroundSyncService {
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
-      print('Failed to schedule sync reminder: $e');
+      debugPrint('Failed to schedule sync reminder: $e');
     }
   }
 

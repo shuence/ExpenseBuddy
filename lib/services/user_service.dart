@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'dart:convert';
 import '../data/remote/auth_service.dart';
+import 'sync_service.dart';
 /// UserService provides user data management with intelligent caching strategy.
 /// 
 /// Caching Strategy:
@@ -34,7 +35,7 @@ class UserService {
       
       return now.difference(lastFetch) < _cacheValidityDuration;
     } catch (e) {
-      print('Error checking cache validity: $e');
+      debugPrint('Error checking cache validity: $e');
       return false;
     }
   }
@@ -45,7 +46,7 @@ class UserService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_lastFetchKey, DateTime.now().toIso8601String());
     } catch (e) {
-      print('Error updating cache timestamp: $e');
+      debugPrint('Error updating cache timestamp: $e');
     }
   }
 
@@ -67,7 +68,7 @@ class UserService {
         user = userJson != null ? UserModel.fromJson(jsonDecode(userJson)) : null;
       } catch (e) {
         // If parsing fails, clear the cached data and fetch fresh
-        print('Error parsing cached user data, clearing cache: $e');
+        debugPrint('Error parsing cached user data, clearing cache: $e');
         await prefs.remove('user_data');
         user = null;
       }
@@ -89,7 +90,7 @@ class UserService {
       
       return null;
     } catch (e) {
-      print('Error getting current user: $e');
+      debugPrint('Error getting current user: $e');
       return null;
     }
   }
@@ -167,7 +168,7 @@ class UserService {
       
       return null;
     } catch (e) {
-      print('Error refreshing user from Firebase: $e');
+      debugPrint('Error refreshing user from Firebase: $e');
       return null;
     }
   }
@@ -209,7 +210,7 @@ class UserService {
       
       return true;
     } catch (e) {
-      print('Error updating user profile: $e');
+      debugPrint('Error updating user profile: $e');
       return false;
     }
   }
@@ -219,5 +220,20 @@ class UserService {
     if (user == null) return false;
     
     return user.displayName.isNotEmpty && user.email.isNotEmpty;
+  }
+
+  // Trigger sync when user logs in
+  Future<void> triggerUserLoginSync(String userId) async {
+    try {
+      print('User logged in - triggering sync for user: $userId');
+      final syncService = SyncService();
+      
+      // Fetch all Firebase data for this user to local DB
+      await syncService.fetchFirebaseData();
+      
+      print('User login sync completed for user: $userId');
+    } catch (e) {
+      print('Failed to trigger user login sync: $e');
+    }
   }
 }

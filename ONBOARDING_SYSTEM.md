@@ -185,9 +185,9 @@ await prefs.remove('has_seen_onboarding');
 ### **Debug Information**
 ```dart
 // Add debug prints in OnboardingBloc
-print('Onboarding status: $hasSeenOnboarding');
-print('Current page: $currentPageIndex');
-print('Total pages: ${pages.length}');
+debugPrint('Onboarding status: $hasSeenOnboarding');
+debugPrint('Current page: $currentPageIndex');
+debugPrint('Total pages: ${pages.length}');
 ```
 
 ## Future Enhancements

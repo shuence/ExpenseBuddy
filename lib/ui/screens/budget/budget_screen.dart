@@ -66,7 +66,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         });
       }
     } catch (e) {
-      print('Error loading user preferences: $e');
+      debugPrint('Error loading user preferences: $e');
     }
   }
 
@@ -78,7 +78,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         await budgetProvider.loadBudgetsForMonth(currentUser.uid, _selectedDate);
       }
     } catch (e) {
-      print('Error loading budget data: $e');
+      debugPrint('Error loading budget data: $e');
     }
   }
 
@@ -90,7 +90,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
         await budgetProvider.refreshBudgetsForMonth(currentUser.uid, _selectedDate);
       }
     } catch (e) {
-      print('Error refreshing budget data: $e');
+      debugPrint('Error refreshing budget data: $e');
     }
   }
 

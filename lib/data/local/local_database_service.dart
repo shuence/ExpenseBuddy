@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../models/transaction_model.dart';
@@ -86,11 +87,19 @@ class LocalDatabaseService {
   // Transaction CRUD operations
   Future<void> insertTransaction(TransactionModel transaction) async {
     final db = await database;
+    
+    final map = _transactionToMap(transaction);
+    log('💾 [DB] Inserting transaction: ${transaction.title} (${transaction.id})');
+    log('💾 [DB] Sync status: ${map['syncStatus']}');
+    log('💾 [DB] User ID: ${map['userId']}');
+    
     await db.insert(
       _transactionsTable,
-      _transactionToMap(transaction),
+      map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    
+    log('✅ [DB] Transaction inserted successfully');
   }
 
   Future<void> updateTransaction(TransactionModel transaction) async {
@@ -140,42 +149,34 @@ class LocalDatabaseService {
 
   Future<List<TransactionModel>> getUnsyncedTransactions(String userId) async {
     final db = await database;
+    
+    // Just get all transactions for the user
     final List<Map<String, dynamic>> maps = await db.query(
       _transactionsTable,
-      where: 'userId = ? AND syncStatus IN (?, ?)',
-      whereArgs: [userId, 'pending', 'failed'],
+      where: 'userId = ?',
+      whereArgs: [userId],
       orderBy: 'createdAt ASC',
     );
 
+    log('🔍 [DB] Found ${maps.length} transactions for user: $userId');
+    
     return List.generate(maps.length, (i) => _mapToTransaction(maps[i]));
   }
 
+  // Simple sync status methods
   Future<void> markTransactionAsSynced(String id) async {
-    final db = await database;
-    await db.update(
-      _transactionsTable,
-      {
-        'syncStatus': 'synced',
-        'syncAttempts': 0,
-        'lastSyncAttempt': DateTime.now().millisecondsSinceEpoch,
-        'syncError': null,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    // Not needed for simple sync
+  }
+
+  Future<void> markTransactionAsPending(String id) async {
+    // Not needed for simple sync
   }
 
   Future<void> markTransactionAsFailed(String id, String error) async {
-    final db = await database;
-    await db.rawUpdate('''
-      UPDATE $_transactionsTable 
-      SET syncStatus = ?, syncAttempts = syncAttempts + 1, 
-          lastSyncAttempt = ?, syncError = ?
-      WHERE id = ?
-    ''', ['failed', DateTime.now().millisecondsSinceEpoch, error, id]);
+    // Not needed for simple sync
   }
 
-  // Sync log operations
+  // Simple sync log operations
   Future<void> logSyncOperation({
     required String operation,
     required String tableName,
@@ -183,38 +184,14 @@ class LocalDatabaseService {
     required String status,
     String? error,
   }) async {
-    final db = await database;
-    await db.insert(_syncLogTable, {
-      'operation': operation,
-      'tableName': tableName,
-      'recordId': recordId,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'status': status,
-      'error': error,
-    });
+    // Not needed for simple sync
   }
 
   Future<List<Map<String, dynamic>>> getSyncLog({
     int limit = 100,
     String? operation,
   }) async {
-    final db = await database;
-    String whereClause = '';
-    List<dynamic> whereArgs = [];
-
-    if (operation != null) {
-      whereClause = 'WHERE operation = ?';
-      whereArgs = [operation];
-    }
-
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT * FROM $_syncLogTable 
-      $whereClause
-      ORDER BY timestamp DESC 
-      LIMIT ?
-    ''', [...whereArgs, limit]);
-
-    return maps;
+    return []; // Not needed for simple sync
   }
 
   // Utility methods
@@ -271,6 +248,17 @@ class LocalDatabaseService {
     final db = await database;
     await db.delete(_transactionsTable);
     await db.delete(_syncLogTable);
+  }
+
+  // Clear data for a specific user (for sync purposes)
+  Future<void> clearUserData(String userId) async {
+    final db = await database;
+    await db.delete(
+      _transactionsTable,
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
+    log('Cleared local data for user: $userId');
   }
 
   Future<void> close() async {

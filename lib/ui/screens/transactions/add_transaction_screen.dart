@@ -317,7 +317,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         final currentUser = await userService.getCurrentUser();
         userId = currentUser?.uid;
       } catch (e) {
-        print('Error getting user: $e');
+        debugPrint('Error getting user: $e');
       }
       
       if (userId == null) {

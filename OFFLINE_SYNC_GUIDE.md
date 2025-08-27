@@ -226,7 +226,7 @@ All sync operations are logged to the local database:
 // View sync logs
 final logs = await localDb.getSyncLog(limit: 100);
 for (final log in logs) {
-  print('${log['operation']} - ${log['status']} - ${log['error']}');
+  debugPrint('${log['operation']} - ${log['status']} - ${log['error']}');
 }
 ```
 
@@ -236,9 +236,9 @@ Get comprehensive sync statistics:
 
 ```dart
 final stats = await syncService.getSyncStats(userId);
-print('Pending: ${stats['pendingTransactions']}');
-print('Connected: ${stats['isConnected']}');
-print('Syncing: ${stats['isSyncing']}');
+debugPrint('Pending: ${stats['pendingTransactions']}');
+debugPrint('Connected: ${stats['isConnected']}');
+debugPrint('Syncing: ${stats['isSyncing']}');
 ```
 
 ### 3. Debug Mode
@@ -341,7 +341,7 @@ await syncService.clearAllData();
 
 // View sync status
 final stats = await syncService.getSyncStats(userId);
-print(stats);
+debugPrint(stats);
 
 // Test background sync
 await backgroundSyncService.registerOneOffTask();

@@ -70,7 +70,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading user preferences: $e');
+        debugPrint('Error loading user preferences: $e');
       }
     }
   }
@@ -86,7 +86,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         await transactionProvider.loadTransactions(currentUser.uid);
       }
     } catch (e) {
-      print('Error loading transactions: $e');
+      debugPrint('Error loading transactions: $e');
     }
   }
 
@@ -237,7 +237,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _onTransactionTap(TransactionModel transaction) {
-    print('Tapped transaction: ${transaction.title}');
+    debugPrint('Tapped transaction: ${transaction.title}');
     context.push(AppRoutes.transactionDetails, extra: transaction);
   }
 

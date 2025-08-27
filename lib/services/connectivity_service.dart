@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 enum ConnectionStatus {
@@ -19,10 +20,14 @@ class ConnectivityService {
   Stream<ConnectionStatus> get connectionStatusStream => 
       _connectionStatusController.stream;
 
-  ConnectionStatus _currentStatus = ConnectionStatus.unknown;
+  ConnectionStatus _currentStatus = ConnectionStatus.connected; // Assume connected by default
   ConnectionStatus get currentStatus => _currentStatus;
 
-  bool get isConnected => _currentStatus == ConnectionStatus.connected;
+  bool get isConnected {
+    final connected = _currentStatus == ConnectionStatus.connected;
+    debugPrint('🌐 [CONNECTIVITY] isConnected called: $connected (status: $_currentStatus)');
+    return connected;
+  }
 
   Future<void> initialize() async {
     try {

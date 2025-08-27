@@ -2,8 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../models/user_model.dart';
 import '../../../../services/user_service.dart';
-import '../../../../services/connectivity_service.dart';
-import '../../../widgets/connectivity_status_widget.dart';
 
 class ProfileHeader extends StatefulWidget {
   final UserModel? user;
@@ -20,7 +18,6 @@ class ProfileHeader extends StatefulWidget {
 class _ProfileHeaderState extends State<ProfileHeader> {
   UserModel? _actualUser;
   final UserService _userService = UserService();
-  final ConnectivityService _connectivityService = ConnectivityService();
 
   @override
   void initState() {
@@ -89,12 +86,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       ),
       child: Row(
         children: [
-          // Connectivity Status Icon
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: const ConnectivityStatusWidget(size: 16),
-          ),
-          
           // Profile Avatar
           Container(
             width: 64,

@@ -45,7 +45,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
         });
       }
     } catch (e) {
-      print('Error loading user preferences: $e');
+      debugPrint('Error loading user preferences: $e');
       setState(() {
         _isLoading = false;
       });

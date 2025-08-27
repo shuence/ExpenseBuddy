@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'sync_service.dart';
 import 'connectivity_service.dart';
 
@@ -26,10 +27,26 @@ class ServiceInitializer {
       // Note: TimerBackgroundSyncService is initialized in main() for proper setup
 
       _isInitialized = true;
-      print('All services initialized successfully');
+      debugPrint('All services initialized successfully');
     } catch (e) {
-      print('Failed to initialize services: $e');
+      debugPrint('Failed to initialize services: $e');
       // Continue app startup even if some services fail
+    }
+  }
+
+  // Trigger initial sync when app starts (if online)
+  Future<void> triggerInitialSync() async {
+    try {
+      final connectivityService = ConnectivityService();
+      if (connectivityService.isConnected) {
+        debugPrint('App started with internet - triggering initial sync');
+        final syncService = SyncService();
+        await syncService.fetchFirebaseData();
+      } else {
+        debugPrint('App started offline - will sync when connectivity returns');
+      }
+    } catch (e) {
+      debugPrint('Failed to trigger initial sync: $e');
     }
   }
 

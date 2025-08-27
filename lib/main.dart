@@ -35,6 +35,9 @@ void main() async {
     // Initialize other services (sync, etc.)
     await ServiceInitializer().initialize();
     
+    // Trigger initial sync if online
+    await ServiceInitializer().triggerInitialSync();
+    
     runApp(const ExpenseBuddyApp());
   } catch (e) {
     debugPrint('Error during app initialization: $e');

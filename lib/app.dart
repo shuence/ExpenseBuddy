@@ -12,6 +12,7 @@ import 'providers/auth_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'data/remote/auth_service.dart';
+import 'services/sync_service.dart';
 
 
 class ExpenseBuddyApp extends StatefulWidget {
@@ -21,7 +22,41 @@ class ExpenseBuddyApp extends StatefulWidget {
   State<ExpenseBuddyApp> createState() => _ExpenseBuddyAppState();
 }
 
-class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> {
+class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.resumed) {
+      // App came to foreground - trigger sync if online
+      _triggerForegroundSync();
+    }
+  }
+
+  Future<void> _triggerForegroundSync() async {
+    try {
+      final syncService = SyncService();
+      if (syncService.isSyncing) return; // Don't trigger if already syncing
+      
+      // Trigger a quick sync when app comes to foreground
+      await syncService.syncNow();
+    } catch (e) {
+      print('Failed to trigger foreground sync: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<SharedPreferences>(

@@ -38,7 +38,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
         await transactionProvider.loadTransactions(currentUser.uid);
       }
     } catch (e) {
-      print('Error loading transactions: $e');
+      debugPrint('Error loading transactions: $e');
     }
   }
 

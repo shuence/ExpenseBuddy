@@ -225,12 +225,19 @@ class _SyncSettingsScreenState extends State<SyncSettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildActionButton(
-            'Sync Now',
-            'Manually sync all pending transactions',
-            CupertinoIcons.arrow_clockwise,
-            () => _manualSync(),
-          ),
+                     _buildActionButton(
+             'Sync Now',
+             'Manually sync all pending transactions',
+             CupertinoIcons.arrow_clockwise,
+             () => _manualSync(),
+           ),
+           const SizedBox(height: 12),
+           _buildActionButton(
+             'Full Sync',
+             'Fetch Firebase data + sync local changes',
+             CupertinoIcons.arrow_2_circlepath,
+             () => _fullSync(),
+           ),
           const SizedBox(height: 12),
                      _buildActionButton(
              'View Sync Log',
@@ -252,6 +259,20 @@ class _SyncSettingsScreenState extends State<SyncSettingsScreen> {
              CupertinoIcons.checkmark_circle,
              () => _markAllAsSynced(),
            ),
+           const SizedBox(height: 12),
+                       _buildActionButton(
+              'Retry Failed Syncs',
+              'Retry transactions that failed to sync',
+              CupertinoIcons.arrow_clockwise_circle,
+              () => _retryFailedSyncs(),
+            ),
+            const SizedBox(height: 12),
+            _buildActionButton(
+              'Force Sync All Pending',
+              'Force sync all pending transactions to Firebase',
+              CupertinoIcons.arrow_2_circlepath_circle,
+              () => _forceSyncAllPending(),
+            ),
         ],
       ),
     );
@@ -369,6 +390,22 @@ class _SyncSettingsScreenState extends State<SyncSettingsScreen> {
     }
   }
 
+  Future<void> _fullSync() async {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      await transactionProvider.fullSync();
+      await _loadSyncStats();
+      
+      if (mounted) {
+        _showAlert('Full Sync Complete', 'Firebase data fetched and local changes synced successfully.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showAlert('Full Sync Failed', 'Failed to perform full sync: $e');
+      }
+    }
+  }
+
   Future<void> _viewSyncLog() async {
     // Navigate to sync log screen
     // You can implement this later
@@ -398,6 +435,28 @@ class _SyncSettingsScreenState extends State<SyncSettingsScreen> {
       _showAlert('Success', 'All pending transactions have been marked as synced.');
     } catch (e) {
       _showAlert('Error', 'Failed to mark transactions as synced: $e');
+    }
+  }
+
+  Future<void> _retryFailedSyncs() async {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      await transactionProvider.retryFailedSyncs();
+      await _loadSyncStats();
+      _showAlert('Success', 'Failed syncs have been retried successfully.');
+    } catch (e) {
+      _showAlert('Error', 'Failed to retry failed syncs: $e');
+    }
+  }
+  
+  Future<void> _forceSyncAllPending() async {
+    try {
+      final transactionProvider = context.read<TransactionProvider>();
+      await transactionProvider.forceSyncAllPending();
+      await _loadSyncStats();
+      _showAlert('Success', 'All pending transactions have been force synced successfully.');
+    } catch (e) {
+      _showAlert('Error', 'Failed to force sync pending transactions: $e');
     }
   }
 

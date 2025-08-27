@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         try {
           userCurrency = await _userPreferencesService.getUserDefaultCurrency();
         } catch (e) {
-          print('Error loading user currency: $e');
+          debugPrint('Error loading user currency: $e');
         }
       }
 
@@ -59,23 +60,30 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = false;
         });
 
-        // Load transactions and budgets for this user
-        if (user != null && mounted) {
-          final transactionProvider = Provider.of<TransactionProvider>(
-            context,
-            listen: false,
-          );
-          final budgetProvider = Provider.of<BudgetProvider>(
-            context,
-            listen: false,
-          );
+                  // Load transactions and budgets for this user
+          if (user != null && mounted) {
+            final transactionProvider = Provider.of<TransactionProvider>(
+              context,
+              listen: false,
+            );
+            final budgetProvider = Provider.of<BudgetProvider>(
+              context,
+              listen: false,
+            );
 
-          // Load data in parallel
-          await Future.wait([
-            transactionProvider.loadTransactions(user.uid),
-            budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
-          ]);
-        }
+            // Load data in parallel
+            await Future.wait([
+              transactionProvider.loadTransactions(user.uid),
+              budgetProvider.loadBudgetsForMonth(user.uid, DateTime.now()),
+            ]);
+
+            // Trigger sync when home screen loads (if online)
+            try {
+              await transactionProvider.fetchFirebaseData();
+            } catch (e) {
+              debugPrint('Failed to fetch Firebase data on home load: $e');
+            }
+          }
       }
     } catch (e) {
       if (mounted) {
@@ -87,6 +95,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
+    // Trigger sync first, then load user data
+    try {
+      if (_currentUser != null) {
+        final transactionProvider = Provider.of<TransactionProvider>(
+          context,
+          listen: false,
+        );
+        
+        // Trigger full sync on pull-to-refresh
+        await transactionProvider.fullSync();
+      }
+    } catch (e) {
+      debugPrint('Failed to sync on refresh: $e');
+    }
+    
+    // Then load user data
     await _loadUserData();
   }
 
@@ -158,14 +182,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         SizedBox(height: ResponsiveConstants.spacing20),
 
-                        // Weekly Spending Chart
-                        ChartWidget(
-                          currency: _userCurrency,
-                          transactions: transactionProvider.transactions,
-                          chartType: ChartType.bar,
-                        ),
-
-                        SizedBox(height: ResponsiveConstants.spacing24),
+                        // Weekly Spending Chart - Only show if there are transactions
+                        if (transactionProvider.transactions.isNotEmpty)
+                          Column(
+                            children: [
+                              ChartWidget(
+                                currency: _userCurrency,
+                                transactions: transactionProvider.transactions,
+                                chartType: ChartType.bar,
+                              ),
+                              SizedBox(height: ResponsiveConstants.spacing24),
+                            ],
+                          ),
 
                         // Navigation Buttons Section
                         _buildNavigationButtons(context),

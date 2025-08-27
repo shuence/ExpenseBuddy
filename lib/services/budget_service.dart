@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/budget_model.dart';
 
 class BudgetService {
@@ -93,7 +94,7 @@ class BudgetService {
       
       return budgets;
     } catch (e) {
-      print('Error getting budgets: $e');
+      debugPrint('Error getting budgets: $e');
       return [];
     }
   }
@@ -125,7 +126,7 @@ class BudgetService {
         return sum + (data['amount'] as num).toDouble();
       });
     } catch (e) {
-      print('Error calculating spent amount: $e');
+      debugPrint('Error calculating spent amount: $e');
       return 0.0;
     }
   }
@@ -139,7 +140,7 @@ class BudgetService {
       }
       return null;
     } catch (e) {
-      print('Error getting budget by ID: $e');
+      debugPrint('Error getting budget by ID: $e');
       return null;
     }
   }
@@ -149,7 +150,7 @@ class BudgetService {
     try {
       await budgetsCollection.add(budget.toJson());
     } catch (e) {
-      print('Error creating budget: $e');
+      debugPrint('Error creating budget: $e');
       throw Exception('Failed to create budget');
     }
   }
@@ -159,7 +160,7 @@ class BudgetService {
     try {
       await budgetsCollection.doc(budget.id).update(budget.toJson());
     } catch (e) {
-      print('Error updating budget: $e');
+      debugPrint('Error updating budget: $e');
       throw Exception('Failed to update budget');
     }
   }
@@ -169,7 +170,7 @@ class BudgetService {
     try {
       await budgetsCollection.doc(id).delete();
     } catch (e) {
-      print('Error deleting budget: $e');
+      debugPrint('Error deleting budget: $e');
       throw Exception('Failed to delete budget');
     }
   }
@@ -188,7 +189,7 @@ class BudgetService {
       }
       return null;
     } catch (e) {
-      print('Error getting budget by category: $e');
+      debugPrint('Error getting budget by category: $e');
       return null;
     }
   }
@@ -206,7 +207,7 @@ class BudgetService {
           .map((doc) => BudgetModel.fromJson({...doc.data() as Map<String, dynamic>, 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Error getting budgets by period: $e');
+      debugPrint('Error getting budgets by period: $e');
       return [];
     }
   }
@@ -252,7 +253,7 @@ class BudgetService {
 
       return updatedBudgets;
     } catch (e) {
-      print('Error getting budgets for month: $e');
+      debugPrint('Error getting budgets for month: $e');
       return [];
     }
   }
@@ -281,7 +282,7 @@ class BudgetService {
         return sum + (data['amount'] as num).toDouble();
       });
     } catch (e) {
-      print('Error calculating spent amount for month: $e');
+      debugPrint('Error calculating spent amount for month: $e');
       return 0.0;
     }
   }
