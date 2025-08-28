@@ -26,7 +26,7 @@ class OverviewStats extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: CupertinoIcons.arrow_up_right,
-            iconColor: Color(0xFF2ECC71),
+            iconColor: AppColors.primary,
             title: 'Income',
             amount: '$currencySymbol${income.toStringAsFixed(0)}',
           ),
@@ -44,7 +44,7 @@ class OverviewStats extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: CupertinoIcons.square_stack_3d_up,
-            iconColor: Color(0xFF4CAF50),
+            iconColor: AppColors.success,
             title: 'Savings',
             amount: '$currencySymbol${savings.toStringAsFixed(0)}',
           ),

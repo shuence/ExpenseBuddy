@@ -46,8 +46,8 @@ class TransactionDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIncome = transaction.type == TransactionType.income;
     final amountColor = isIncome 
-        ? const Color(0xFF2ECC71) 
-        : const Color(0xFFE74C3C);
+        ? const AppColors.primary 
+        : const AppColors.error;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -111,8 +111,8 @@ class TransactionDetailsScreen extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isIncome 
-                            ? const Color(0xFF2ECC71).withOpacity(0.1)
-                            : const Color(0xFFE74C3C).withOpacity(0.1),
+                            ? const AppColors.primary.withOpacity(0.1)
+                            : const AppColors.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(ResponsiveConstants.radius20),
                       ),
                       child: Text(

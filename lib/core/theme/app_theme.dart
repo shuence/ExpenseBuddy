@@ -1,46 +1,98 @@
 import 'package:flutter/cupertino.dart';
+import '../constants/colors.dart';
 
+/// Enhanced app theme using color constants
+/// Provides consistent theming across the app
 class AppTheme {
-  // Light Mode Colors
-  static const Color lightPrimary = Color(0xFF2ECC71);     // Emerald Green
-  static const Color lightSecondary = Color(0xFF2C3E50);   // Navy Blue
-  static const Color lightAccent = Color(0xFFF1C40F);      // Yellow
-  static const Color lightBackground = Color(0xFFF8F9FA);  // Light Gray
-  static const Color lightSurface = Color(0xFFFFFFFF);      // White
-  static const Color lightTextPrimary = Color(0xFF2D3436); // Dark Gray
-  static const Color lightTextSecondary = Color(0xFF636E72); // Muted Gray
-
-  // Dark Mode Colors
-  static const Color darkPrimary = Color(0xFF27AE60);      // Darker Emerald Green
-  static const Color darkSecondary = Color(0xFF34495E);    // Slate Blue
-  static const Color darkAccent = Color(0xFFF39C12);       // Golden Yellow
-  static const Color darkBackground = Color(0xFF121212);   // Dark Charcoal
-  static const Color darkSurface = Color(0xFF1E1E1E);     // Dark Gray
-  static const Color darkTextPrimary = Color(0xFFECF0F1); // White
-  static const Color darkTextSecondary = Color(0xFFBDC3C7); // Gray
-
-  // Common Colors
-  static const Color errorColor = Color(0xFFE74C3C);
-
   // Light Theme
   static CupertinoThemeData get lightTheme {
     return const CupertinoThemeData(
-      primaryColor: lightPrimary,
-      scaffoldBackgroundColor: lightBackground,
-      barBackgroundColor: lightSurface,
-      primaryContrastingColor: lightTextPrimary,
+      primaryColor: AppColors.primary,
+      scaffoldBackgroundColor: AppColors.lightBackground,
+      barBackgroundColor: AppColors.lightSurface,
+      primaryContrastingColor: AppColors.lightTextPrimary,
       brightness: Brightness.light,
+      // Additional theme properties
+      textTheme: CupertinoTextThemeData(
+        primaryColor: AppColors.lightTextPrimary,
+        textStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 16,
+        ),
+        actionTextStyle: TextStyle(
+          color: AppColors.primary,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        tabLabelTextStyle: TextStyle(
+          color: AppColors.lightTextSecondary,
+          fontSize: 12,
+        ),
+        navTitleTextStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        navLargeTitleTextStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+        ),
+        pickerTextStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 16,
+        ),
+        dateTimePickerTextStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 16,
+        ),
+      ),
     );
   }
 
   // Dark Theme
   static CupertinoThemeData get darkTheme {
     return const CupertinoThemeData(
-      primaryColor: darkPrimary,
-      scaffoldBackgroundColor: darkBackground,
-      barBackgroundColor: darkSurface,
-      primaryContrastingColor: darkTextPrimary,
+      primaryColor: AppColors.primary,
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      barBackgroundColor: AppColors.darkSurface,
+      primaryContrastingColor: AppColors.darkTextPrimary,
       brightness: Brightness.dark,
+      // Additional theme properties
+      textTheme: CupertinoTextThemeData(
+        primaryColor: AppColors.darkTextPrimary,
+        textStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 16,
+        ),
+        actionTextStyle: TextStyle(
+          color: AppColors.primary,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        tabLabelTextStyle: TextStyle(
+          color: AppColors.darkTextSecondary,
+          fontSize: 12,
+        ),
+        navTitleTextStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        navLargeTitleTextStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+        ),
+        pickerTextStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 16,
+        ),
+        dateTimePickerTextStyle: TextStyle(
+          color: AppColors.darkTextPrimary,
+          fontSize: 16,
+        ),
+      ),
     );
   }
 
@@ -49,34 +101,65 @@ class AppTheme {
 
   // Helper methods to get colors based on brightness
   static Color getPrimaryColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkPrimary : lightPrimary;
+    return brightness == Brightness.dark ? AppColors.primary : AppColors.primary;
   }
 
   static Color getSecondaryColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkSecondary : lightSecondary;
+    return brightness == Brightness.dark ? AppColors.secondary : AppColors.secondary;
   }
 
   static Color getAccentColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkAccent : lightAccent;
+    return brightness == Brightness.dark ? AppColors.accent : AppColors.accent;
   }
 
   static Color getBackgroundColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkBackground : lightBackground;
+    return brightness == Brightness.dark ? AppColors.darkBackground : AppColors.lightBackground;
   }
 
   static Color getSurfaceColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkSurface : lightSurface;
+    return brightness == Brightness.dark ? AppColors.darkSurface : AppColors.lightSurface;
   }
 
   static Color getTextPrimaryColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkTextPrimary : lightTextPrimary;
+    return brightness == Brightness.dark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
   }
 
   static Color getTextSecondaryColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkTextSecondary : lightTextSecondary;
+    return brightness == Brightness.dark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
   }
 
   static Color getBorderColor(Brightness brightness) {
-    return brightness == Brightness.dark ? darkTextSecondary.withOpacity(0.3) : lightTextSecondary.withOpacity(0.3);
+    return brightness == Brightness.dark ? AppColors.darkBorder : AppColors.lightBorder;
+  }
+
+  static Color getDividerColor(Brightness brightness) {
+    return brightness == Brightness.dark ? AppColors.darkDivider : AppColors.lightDivider;
+  }
+
+  // Semantic color getters
+  static Color getSuccessColor(Brightness brightness) {
+    return AppColors.success;
+  }
+
+  static Color getWarningColor(Brightness brightness) {
+    return AppColors.warning;
+  }
+
+  static Color getErrorColor(Brightness brightness) {
+    return AppColors.error;
+  }
+
+  static Color getInfoColor(Brightness brightness) {
+    return AppColors.info;
+  }
+
+  // Category color getters
+  static Color getCategoryColor(String category, Brightness brightness) {
+    return AppColors.getCategoryColor(category);
+  }
+
+  // Chart color getters
+  static Color getChartColor(int index, Brightness brightness) {
+    return AppColors.getChartColor(index);
   }
 }

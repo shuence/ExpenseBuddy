@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_constants.dart';
+import 'core/theme/theme_provider.dart';
 import 'router/app_router.dart';
-import 'services/theme_service.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/auth_provider.dart';
@@ -70,13 +70,13 @@ class _ExpenseBuddyAppState extends State<ExpenseBuddyApp> with WidgetsBindingOb
             ChangeNotifierProvider(create: (context) => TransactionProvider()),
             ChangeNotifierProvider(create: (context) => BudgetProvider()),
             ChangeNotifierProvider(create: (context) => NavigationProvider()),
+            ChangeNotifierProvider(create: (context) => ThemeProvider()),
           ],
-          child: ValueListenableBuilder<bool>(
-            valueListenable: ThemeService.instance.isDarkModeNotifier,
-            builder: (context, isDark, _) {
+          child: Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) {
               return CupertinoApp.router(
                 title: AppConstants.appName,
-                theme: ThemeService.instance.currentTheme,
+                theme: themeProvider.currentTheme,
                 routerConfig: _router,
                 debugShowCheckedModeBanner: false,
               );

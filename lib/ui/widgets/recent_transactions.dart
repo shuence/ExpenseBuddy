@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/responsive_constants.dart';
+import '../../core/constants/colors.dart';
 import '../../models/transaction_model.dart';
 import '../../router/routes.dart';
 import '../../utils/currency_utils.dart';
@@ -45,29 +46,7 @@ class RecentTransactions extends StatelessWidget {
   }
 
   Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'food':
-      case 'food & dining':
-      case 'groceries':
-        return const Color(0xFF4CAF50);
-      case 'transportation':
-      case 'transport':
-        return CupertinoColors.systemBlue;
-      case 'entertainment':
-        return const Color(0xFF9C27B0);
-      case 'bills':
-      case 'utilities':
-        return CupertinoColors.systemOrange;
-      case 'income':
-      case 'salary':
-        return const Color(0xFF2ECC71);
-      case 'shopping':
-        return CupertinoColors.systemPink;
-      case 'healthcare':
-        return CupertinoColors.systemRed;
-      default:
-        return CupertinoColors.systemGrey;
-    }
+    return AppColors.getCategoryColor(category);
   }
 
   String _formatTime(DateTime date) {
@@ -110,7 +89,7 @@ class RecentTransactions extends StatelessWidget {
                 'See All',
                 style: TextStyle(
                   fontSize: ResponsiveConstants.fontSize12,
-                  color: Color(0xFF4CAF50),
+                  color: AppColors.success,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -254,7 +233,7 @@ class TransactionItem extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: amount.startsWith('-') 
                       ? CupertinoColors.systemRed 
-                      : Color(0xFF4CAF50),
+                      : AppColors.success,
                 ),
               ),
               SizedBox(height: ResponsiveConstants.spacing2),

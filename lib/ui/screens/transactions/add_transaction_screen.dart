@@ -216,14 +216,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                              Container(
                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                decoration: BoxDecoration(
-                                 color: const Color(0xFF2ECC71).withOpacity(0.1),
+                                 color: const AppColors.primary.withOpacity(0.1),
                                  borderRadius: BorderRadius.circular(4),
                                ),
                                child: Text(
                                  'Default',
                                  style: TextStyle(
                                    fontSize: 10,
-                                   color: const Color(0xFF2ECC71),
+                                   color: const AppColors.primary,
                                    fontWeight: FontWeight.w500,
                                  ),
                                ),
@@ -369,7 +369,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isIncome = transaction.type == TransactionType.income;
     final typeText = isIncome ? 'Income' : 'Expense';
     final icon = isIncome ? CupertinoIcons.plus_circle_fill : CupertinoIcons.minus_circle_fill;
-    final color = isIncome ? const Color(0xFF2ECC71) : const Color(0xFFE74C3C);
+    final color = isIncome ? const AppColors.primary : const AppColors.error;
     
     showCupertinoDialog(
       context: context,
@@ -440,7 +440,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final isIncome = transaction.type == TransactionType.income;
     final typeText = isIncome ? 'Income' : 'Expense';
     final icon = isIncome ? CupertinoIcons.plus_circle_fill : CupertinoIcons.minus_circle_fill;
-    final color = isIncome ? const Color(0xFF2ECC71) : const Color(0xFFE74C3C);
+    final color = isIncome ? const AppColors.primary : const AppColors.error;
     
     showCupertinoDialog(
       context: context,
@@ -642,8 +642,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Widget _buildHeroSection(BuildContext context, bool isIncome) {
     final typeColor = isIncome 
-        ? const Color(0xFF2ECC71) 
-        : const Color(0xFFE74C3C);
+        ? const AppColors.primary 
+        : const AppColors.error;
     
     return Container(
       width: double.infinity,
@@ -690,7 +690,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         CupertinoIcons.minus_circle_fill,
                         color: _selectedType == TransactionType.expense 
                             ? CupertinoColors.white
-                            : const Color(0xFFE74C3C),
+                            : const AppColors.error,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
@@ -707,7 +707,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         CupertinoIcons.plus_circle_fill,
                         color: _selectedType == TransactionType.income 
                             ? CupertinoColors.white
-                            : const Color(0xFF2ECC71),
+                            : const AppColors.primary,
                         size: 18,
                       ),
                       const SizedBox(width: 8),

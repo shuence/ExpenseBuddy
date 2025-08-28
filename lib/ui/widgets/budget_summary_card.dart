@@ -176,6 +176,6 @@ class BudgetSummaryCard extends StatelessWidget {
   Color _getProgressColor(double percentage) {
     if (percentage >= 90) return CupertinoColors.systemRed;
     if (percentage >= 75) return CupertinoColors.systemOrange;
-    return const Color(0xFF2ECC71);
+    return const AppColors.primary;
   }
 }

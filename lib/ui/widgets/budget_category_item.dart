@@ -77,7 +77,7 @@ class BudgetCategoryItem extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: budget.isPositiveChange 
-                            ? const Color(0xFF2ECC71) 
+                            ? const AppColors.primary 
                             : CupertinoColors.systemRed,
                         ),
                       ),
@@ -180,15 +180,15 @@ class BudgetCategoryItem extends StatelessWidget {
   Color _getCategoryColor() {
     switch (budget.name) {
       case 'Food & Dining':
-        return const Color(0xFF2ECC71);
+        return const AppColors.primary;
       case 'Transportation':
-        return const Color(0xFF3498DB);
+        return const AppColors.info;
       case 'Bills & Utilities':
-        return const Color(0xFFE74C3C);
+        return const AppColors.error;
       case 'Entertainment':
-        return const Color(0xFF9B59B6);
+        return const AppColors.chart5;
       default:
-        return const Color(0xFF2ECC71);
+        return const AppColors.primary;
     }
   }
 }

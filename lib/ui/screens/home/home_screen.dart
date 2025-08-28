@@ -303,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: const Color(0xFF2ECC71)),
+            Icon(icon, size: 32, color: const AppColors.primary),
             SizedBox(height: ResponsiveConstants.spacing8),
             Text(
               title,

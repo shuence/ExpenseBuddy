@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'dart:math' as math;
 import '../../core/constants/responsive_constants.dart';
+import '../../core/constants/colors.dart';
 
 class CircularProgressWidget extends StatelessWidget {
   final double percentage;
@@ -15,8 +16,8 @@ class CircularProgressWidget extends StatelessWidget {
     required this.percentage,
     this.size,
     this.strokeWidth,
-    this.progressColor = const Color(0xFF2ECC71),
-    this.backgroundColor = const Color(0xFFE0E0E0),
+    this.progressColor = AppColors.primary,
+    this.backgroundColor = AppColors.neutral300,
     this.child,
   });
 
