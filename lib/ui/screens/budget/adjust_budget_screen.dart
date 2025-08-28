@@ -429,15 +429,15 @@ class _AdjustBudgetScreenState extends State<AdjustBudgetScreen> {
   Color _getCategoryColor(String categoryName) {
     switch (categoryName) {
       case 'Food & Dining':
-        return const Color(0xFF2ECC71);
+        return const AppColors.primary;
       case 'Transportation':
-        return const Color(0xFF3498DB);
+        return const AppColors.info;
       case 'Bills & Utilities':
-        return const Color(0xFFE74C3C);
+        return const AppColors.error;
       case 'Entertainment':
-        return const Color(0xFF9B59B6);
+        return const AppColors.chart5;
       default:
-        return const Color(0xFF2ECC71);
+        return const AppColors.primary;
     }
   }
 }

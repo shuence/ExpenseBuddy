@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import '../../core/constants/responsive_constants.dart';
+import '../../core/constants/colors.dart';
 
 class BalanceCard extends StatelessWidget {
   final double balance;
@@ -20,17 +21,14 @@ class BalanceCard extends StatelessWidget {
       padding: EdgeInsets.all(ResponsiveConstants.spacing20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF2ECC71), // Green color matching the image
-            Color(0xFF27AE60),
-          ],
+          colors: AppColors.primaryGradient,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(ResponsiveConstants.radius20),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF4CAF50).withOpacity(0.3),
+            color: AppColors.success.withOpacity(0.3),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),

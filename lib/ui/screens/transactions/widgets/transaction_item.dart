@@ -82,8 +82,8 @@ class TransactionItem extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: transaction.type == TransactionType.income
-                    ? const Color(0xFF2ECC71)
-                    : const Color(0xFFE74C3C),
+                    ? const AppColors.primary
+                    : const AppColors.error,
               ),
             ),
           ],
@@ -101,23 +101,23 @@ class TransactionItem extends StatelessWidget {
       case 'transport':
       case 'uber':
       case 'uber ride':
-        return const Color(0xFF3498DB);
+        return const AppColors.info;
       case 'bills':
       case 'electric bill':
       case 'utilities':
-        return const Color(0xFFF39C12);
+        return const AppColors.accentDark;
       case 'entertainment':
       case 'netflix':
       case 'netflix subscription':
-        return const Color(0xFFE74C3C);
+        return const AppColors.error;
       case 'salary':
       case 'income':
-        return const Color(0xFF2ECC71);
+        return const AppColors.primary;
       case 'transfer':
       case 'bank transfer':
-        return const Color(0xFF9B59B6);
+        return const AppColors.chart5;
       default:
-        return const Color(0xFF95A5A6);
+        return const AppColors.chart9;
     }
   }
 

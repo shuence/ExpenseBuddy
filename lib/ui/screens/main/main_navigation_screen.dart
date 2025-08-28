@@ -11,6 +11,8 @@ import '../home/home_screen.dart';
 import '../transactions/transactions_screen.dart';
 import '../budget/budget_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../core/constants/colors.dart';
+import '../../providers/app_router.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -156,7 +158,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               navigationProvider.setIndex(index);
             },
             backgroundColor: CupertinoColors.systemBackground,
-            activeColor: const Color(0xFF2ECC71),
+            activeColor: AppColors.primary,
             inactiveColor: CupertinoColors.systemGrey,
             border: const Border(
               top: BorderSide(

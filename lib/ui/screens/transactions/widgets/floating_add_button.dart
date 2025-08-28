@@ -20,8 +20,8 @@ class FloatingAddButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
-                Color(0xFF2ECC71),
-                Color(0xFF27AE60),
+                AppColors.primary,
+                AppColors.primaryDark,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -29,7 +29,7 @@ class FloatingAddButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2ECC71).withOpacity(0.4),
+                color: const AppColors.primary.withOpacity(0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),

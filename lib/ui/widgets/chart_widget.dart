@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/colors.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/currency_utils.dart';
 
@@ -404,16 +405,16 @@ class ChartWidget extends StatelessWidget {
 
   List<PieChartSectionData> _buildPieChartSections(Map<String, double> categoryTotals, double total) {
     final colors = [
-      const Color(0xFF2ECC71), // Green
-      const Color(0xFF3498DB), // Blue
-      const Color(0xFFE74C3C), // Red
-      const Color(0xFFF39C12), // Orange
-      const Color(0xFF9B59B6), // Purple
-      const Color(0xFF1ABC9C), // Teal
-      const Color(0xFFE67E22), // Dark Orange
-      const Color(0xFF34495E), // Dark Blue
-      const Color(0xFF95A5A6), // Gray
-      const Color(0xFFF1C40F), // Yellow
+      AppColors.chart1,  // Green
+      AppColors.chart2,  // Blue
+      AppColors.chart3,  // Red
+      AppColors.chart4,  // Orange
+      AppColors.chart5,  // Purple
+      AppColors.chart6,  // Teal
+      AppColors.chart7,  // Dark Orange
+      AppColors.chart8,  // Dark Blue
+      AppColors.chart9,  // Gray
+      AppColors.chart10, // Yellow
     ];
 
     return categoryTotals.entries.map((entry) {
